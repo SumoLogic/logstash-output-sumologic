@@ -18,14 +18,14 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   
   config_name "sumologic"
   
-  # The hostname to send logs to. This should be given when creating a HTTP Source
-  # on Sumo Logic web app http://help.sumologic.com/Send_Data/Sources/HTTP_Source
+  # The URL to send logs to. This should be given when creating a HTTP Source
+  # on Sumo Logic web app. See http://help.sumologic.com/Send_Data/Sources/HTTP_Source
   config :url, :validate => :string, :required => true
 
   # Include extra HTTP headers on request if needed 
   config :extra_headers, :validate => :hash, :default => []
 
-  # The formatter of message, by default is message with timestamp as prefix
+  # The formatter of message, by default is message with timestamp and host as prefix
   config :format, :validate => :string, :default => "%{@timestamp} %{host} %{message}"
 
   # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately  
