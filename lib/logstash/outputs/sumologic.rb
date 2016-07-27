@@ -26,6 +26,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   config :extra_headers, :validate => :hash, :default => []
 
   # The formatter of message, by default is message with timestamp and host as prefix
+  # use %{@json} tag to send whole event
   config :format, :validate => :string, :default => "%{@timestamp} %{host} %{message}"
 
   # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately  
@@ -33,6 +34,9 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
   # Compress the payload 
   config :compress, :validate => :boolean, :default => false
+
+  # This lets you choose the structure and parts of the event that are sent in @json tag.
+  config :json_mapping, :validate => :hash
 
   public
   def register
@@ -57,7 +61,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       return
     end
 
-    content = event.sprintf(@format)
+    content = format_event(event)
     
     if @interval <= 0 # means send immediately
       send_request(content)
@@ -128,8 +132,35 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   def get_headers()
     base = { "Content-Type" => "text/plain" }
     base["Content-Encoding"] = "deflate" if @compress
-    return base.merge(@extra_headers)
-  end # def get_header
+    base.merge(@extra_headers)
+  end # def get_headers
+
+  private 
+  def format_event(event)
+    if @format.to_s.strip.length == 0
+      LogStash::Json.dump(map_event(event))
+    else
+      f = if @format.include? "%{@json}"
+        @format.gsub("%{@json}", LogStash::Json.dump(map_event(event)))
+      else
+        @format
+      end
+      event.sprintf(f)
+    end
+  end # def format_event
+
+  private 
+  def map_event(event)
+    if @json_mapping
+      @json_mapping.reduce({}) do |acc, kv|
+        k, v = kv
+        acc[k] = event.sprintf(v)
+        acc
+      end
+    else
+      event.to_hash
+    end
+  end # def map_event
   
   private
   def log_failure(message, opts)
