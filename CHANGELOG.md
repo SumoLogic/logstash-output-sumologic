@@ -18,3 +18,6 @@ will create message as:
 {"foo":"2016-07-27T18:37:59.460Z","bar":"hello world"}
 {"foo":"2016-07-27T18:38:01.222Z","bar":"bye!"}
 ```
+
+### 1.0.3
+ - Remove version limitation so it works with Log Stash 5.0.0 core
