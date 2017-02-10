@@ -41,7 +41,7 @@ Logon to Sumo Logic [web app](https://prod-www.sumologic.net/ui/) and run [Searc
 
 ### Furthermore
 - Try it with different input/filter/codec plugins
-- Start LogStash as a service/daemon in your production environment 
+- Start LogStash as a service/daemon in your production environment
 - Report any issue or idea through [Git Hub](https://github.com/SumoLogic/logstash-output-sumologic)
 
 ## Parameters
@@ -53,7 +53,7 @@ And it supports following additional prarmeters:
   # on Sumo Logic web app. See http://help.sumologic.com/Send_Data/Sources/HTTP_Source
   config :url, :validate => :string, :required => true
 
-  # Include extra HTTP headers on request if needed 
+  # Include extra HTTP headers on request if needed
   config :extra_headers, :validate => :hash, :default => []
 
   # The formatter of message, by default is message with timestamp and host as prefix
@@ -62,11 +62,7 @@ And it supports following additional prarmeters:
   # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately  
   config :interval, :validate => :number, :default => 0
 
-  # Compress the payload 
+  # Compress the payload
   config :compress, :validate => :boolean, :default => false
 
 ```
-
-
-
-

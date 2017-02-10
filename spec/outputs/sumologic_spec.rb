@@ -4,9 +4,9 @@ require "logstash/outputs/sumologic"
 require "logstash/codecs/plain"
 require "logstash/event"
 
-describe LogStash::Outputs::SumoLogic do
+describe LogStash::Outputs::Sumologic do
   let(:sample_event) { LogStash::Event.new }
-  let(:output) { LogStash::Outputs::SumoLogic.new }
+  let(:output) { LogStash::Outputs::Sumologic.new }
 
   before do
     output.register
