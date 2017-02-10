@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name          = 'logstash-output-sumologic'
   s.version       = '1.0.4'
-  s.licenses      = ['Apache License (2.0)']
+  s.licenses      = ['Apache-2.0']
   s.summary       = 'Deliever the log to Sumo Logic cloud service.'
   s.description   = 'This gem is a Logstash output plugin to deliver the log to Sumo Logic cloud service. Go to https://github.com/SumoLogic/logstash-output-sumologic for getting help, reporting issues, etc.'
   s.homepage      = "https://github.com/SumoLogic/logstash-output-sumologic"
