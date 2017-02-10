@@ -1,42 +1,38 @@
 # encoding: utf-8
-require "logstash/json"
-require "logstash/namespace"
 require "logstash/outputs/base"
+require "logstash/namespace"
+require "logstash/json"
 require "logstash/plugin_mixins/http_client"
 require 'thread'
 require "uri"
 require "zlib"
 
-# Now you can use logstash to deliver logs to Sumo Logic
-#
-# Create a HTTP Source
-# in your Sumo Logic account and you can now use logstash to parse your log and 
-# send your logs to your account at Sumo Logic.
-#
-class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
+# An sumologic output that does nothing.
+class LogStash::Outputs::Sumologic < LogStash::Outputs::Base
   include LogStash::PluginMixins::HttpClient
-  
+
   config_name "sumologic"
-  
+
   # The URL to send logs to. This should be given when creating a HTTP Source
   # on Sumo Logic web app. See http://help.sumologic.com/Send_Data/Sources/HTTP_Source
   config :url, :validate => :string, :required => true
 
-  # Include extra HTTP headers on request if needed 
+  # Include extra HTTP headers on request if needed
   config :extra_headers, :validate => :hash, :default => []
 
   # The formatter of message, by default is message with timestamp and host as prefix
   # use %{@json} tag to send whole event
   config :format, :validate => :string, :default => "%{@timestamp} %{host} %{message}"
 
-  # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately  
+  # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately
   config :interval, :validate => :number, :default => 0
 
-  # Compress the payload 
+  # Compress the payload
   config :compress, :validate => :boolean, :default => false
 
   # This lets you choose the structure and parts of the event that are sent in @json tag.
   config :json_mapping, :validate => :hash
+
 
   public
   def register
@@ -53,7 +49,8 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     events.each { |event| receive(event) }
     client.execute!
   end # def multi_receive
-  
+
+
   public
   def receive(event)
     if event == LogStash::SHUTDOWN
@@ -62,7 +59,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     end
 
     content = format_event(event)
-    
+
     if @interval <= 0 # means send immediately
       send_request(content)
       return
@@ -78,7 +75,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
         @pile.clear
       end
     }
-  end # def receive
+  end # def event
 
   public
   def close
@@ -88,7 +85,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     }
     client.close
   end # def close
-  
+
   private
   def send_request(content)
     token = @request_tokens.pop
@@ -127,7 +124,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
     request.call
   end # def send_request
-  
+
   private
   def get_headers()
     base = { "Content-Type" => "text/plain" }
@@ -135,7 +132,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     base.merge(@extra_headers)
   end # def get_headers
 
-  private 
+  private
   def format_event(event)
     if @format.to_s.strip.length == 0
       LogStash::Json.dump(map_event(event))
@@ -149,7 +146,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     end
   end # def format_event
 
-  private 
+  private
   def map_event(event)
     if @json_mapping
       @json_mapping.reduce({}) do |acc, kv|
@@ -161,10 +158,9 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       event.to_hash
     end
   end # def map_event
-  
+
   private
   def log_failure(message, opts)
     @logger.error(message, opts)
   end # def log_failure
-
-end # class LogStash::Outputs::SumoLogic
+end # class LogStash::Outputs::Sumologic
