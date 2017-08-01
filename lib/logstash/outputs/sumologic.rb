@@ -17,7 +17,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   include LogStash::PluginMixins::HttpClient
   
   config_name "sumologic"
-  
+
   # The URL to send logs to. This should be given when creating a HTTP Source
   # on Sumo Logic web app. See http://help.sumologic.com/Send_Data/Sources/HTTP_Source
   config :url, :validate => :string, :required => true
@@ -46,6 +46,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     @timer = Time.now
     @pile = Array.new
     @semaphore = Mutex.new
+    connect()
   end # def register
 
   public
@@ -88,6 +89,11 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     }
     client.close
   end # def close
+
+  private
+  def connect
+    # TODO: ping endpoint
+  end # def connect
   
   private
   def send_request(content)
