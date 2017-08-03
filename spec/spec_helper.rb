@@ -17,9 +17,6 @@ class Server
     @queue.pop
   end
 
-  def stop
-  end
-
   def empty?
     @queue.empty?
   end
