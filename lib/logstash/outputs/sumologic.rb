@@ -142,8 +142,6 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     body = compress(content)
     headers = get_headers()
 
-    @logger.debug("sending ", :url => @url, :headers => headers, :body => body)
-
     request = client.send(:parallel).send(:post, @url, :body => body, :headers => headers)
     request.on_complete do
       @request_tokens << token
@@ -177,20 +175,25 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   def compress(content)
     if @compress
       if @compress_encoding == "gzip"
-        stream = StringIO.new("w")
-        gz = Zlib::GzipWriter.new(stream)
-        gz.write(content)
-        gz.close
-        result = stream.string
-        @logger.info("gzip", :from => content, :to => result)
-        result
+        result = gzip(content)
+        result.bytes.to_a.pack('c*')
       else
         Zlib::Deflate.deflate(content)
       end
     else
       content
     end
-  end
+  end # def compress
+  
+  private
+  def gzip(content)
+    stream = StringIO.new("w")
+    stream.set_encoding("ASCII")
+    gz = Zlib::GzipWriter.new(stream)
+    gz.write(content)
+    gz.close
+    stream.string.bytes.to_a.pack('c*')
+  end # def gzip
 
   private
   def get_headers()
@@ -247,7 +250,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   def expand(template, event)
     template = template.gsub("%{@json}", LogStash::Json.dump(event2hash(event))) if template.include? "%{@json}"
     event.sprintf(template)
-  end
+  end # def expand
 
   private 
   def event2hash(event)
@@ -266,9 +269,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   def event2graphite(event)
     timestamp = get_timestamp(event)
     expand_hash(@metrics, event).flat_map { |key, value|
-      line = "#{get_metric_name(event, key)} #{value} #{timestamp}"
-      @logger.debug? && @logger.debug("processing", :key => key, :value => value, :line => line)
-      line
+      "#{get_metric_name(event, key)} #{value} #{timestamp}"
     }.join('\n')
   end # def event2graphite
 
@@ -313,9 +314,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     
     expand_hash(@metrics, event).flat_map { |key, value|
       intrinsic_tags["metric"] = get_metric_name(event, key)
-      line = "#{hash2line(intrinsic_tags, event)}  #{hash2line(meta_tags, event)} #{value} #{timestamp}"
-      @logger.debug? && @logger.debug("processing", :key => key, :value => value, :line => line)
-      line
+      "#{hash2line(intrinsic_tags, event)}  #{hash2line(meta_tags, event)} #{value} #{timestamp}"
     }.join('\n')
 
   end # def event2carbon2
