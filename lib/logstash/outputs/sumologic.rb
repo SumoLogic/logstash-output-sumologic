@@ -23,21 +23,20 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # on Sumo Logic web app. See http://help.sumologic.com/Send_Data/Sources/HTTP_Source
   config :url, :validate => :string, :required => true
 
-  # Include extra HTTP headers on request if needed 
-  config :extra_headers, :validate => :hash
+  # This lets you pre populate the structure and parts from the event into @json tag
+  config :json_mapping, :validate => :hash
 
-  # The formatter of message, by default is message with timestamp and host as prefix
-  # use %{@json} tag to send whole event
-  config :format, :validate => :string, :default => "%{@timestamp} %{host} %{message}"
+  # Define the source category metadata
+  config :source_category, :validate => :string
 
-  # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately  
-  config :interval, :validate => :number, :default => 0
-
-  # Define the soure host used for query
+  # Define the source host metadata
   config :source_host, :validate => :string
 
-  # Define the soure category used for query
-  config :source_category, :validate => :string, :default => "logstash"
+  # Define the source name metadat
+  config :source_name, :validate => :string
+
+  # Include extra HTTP headers on request if needed 
+  config :extra_headers, :validate => :hash
 
   # Compress the payload 
   config :compress, :validate => :boolean, :default => false
@@ -45,37 +44,54 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # The encoding method of compress
   config :compress_encoding, :validate =>:string, :default => "defalte"
 
-  # This lets you choose the structure and parts of the event that are sent in @json tag.
-  config :json_mapping, :validate => :hash
+  # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately  
+  config :interval, :validate => :number, :default => 0
 
-  # Send metric(s) if configured. This is a hash with key as metric name and value as metric value
+  # The formatter of log message, by default is message with timestamp and host as prefix
+  # use %{@json} tag to send whole event
+  config :format, :validate => :string, :default => "%{@timestamp} %{host} %{message}"
+
+  # Send metric(s) if configured. This is a hash with k as metric name and v as metric value
   # Both metric names and values support dynamic strings like %{host}
   # For example: 
   #     metrics => { "%{host}/uptime" => "%{uptime_1m}" }
   config :metrics, :validate => :hash
   
-  # Defines the format of the metric string, currently support `graphite` and `carbon2`
+  # Defines the format of the metric, support "graphite" or "carbon2"
   config :metrics_format, :validate => :string, :default => "graphite"
 
-  # The extra configuration of the metric. 
-  #
-  # For graphit format only, support name_template which define the metric name
-  # the placeholder '*' will be replaced with the actual metric name.
-  #
-  # For carbon2 format only, support intrinsic_tags and meta_tags
-  # Both of them are hash with key and value defined as string suport dynamic content
-  config :metrics_config, :validate => :hash
+  # Define the metric name looking, the placeholder '*' will be replaced with the actual metric name
+  # For example:
+  #     metrics => { "uptime.1m" => "%{uptime_1m}" }
+  #     metrics_name => "mynamespace.*"
+  # will produce metrics as:
+  #     "mynamespace.uptime.1m xxx 1234567"
+  config :metrics_name, :validate => :string, :default => "*"
+
+  # For carbon2 metrics format only, define the intrinsic tags (which will be used to identify the metrics)
+  # There is always an intrinsic tag as "name" => <metrics name>
+  config :metrics_intrinsic_tags, :validate => :hash, :default => {}
+
+  # For carbon2 metrics format only, define the meta tags (which will NOT be used to identify the metrics)
+  # source_category, source_host and source_name will be passed in if exist
+  config :metrics_meta_tags, :validate => :hash, :default => {}
   
   CONTENT_TYPE_LOG = "text/plain"
   CONTENT_TYPE_GRAPHITE = "application/vnd.sumologic.graphite"
   CONTENT_TYPE_CARBON2 = "application/vnd.sumologic.carbon2"
   HOST_HEADER = "X-Sumo-Host"
   CATEGORY_HEADER = "X-Sumo-Category"
+  NAME_HEADER = "X-Sumo-Name"
   TIMESTAMP_FIELD = "@timestamp"
   METRIC_PLACEHOLDER = "*"
 
   public
   def register
+    @source_host = `hostname`.strip unless @source_host
+    @metrics_meta_tags["_sourceCategory"] = @source_category if @source_category
+    @metrics_meta_tags["_sourceName"] = @source_name if @source_name
+    @metrics_meta_tags["_sourceHost"] = @source_host if @source_host
+
     # initialize request pool
     @request_tokens = SizedQueue.new(@pool_max)
     @pool_max.times { |t| @request_tokens << true }
@@ -199,15 +215,18 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   def get_headers()
 
     base = {}
-    
-    base[HOST_HEADER] = @source_host if @source_host
+    base.merge(@extra_headers) if @extra_headers
+
     base[CATEGORY_HEADER] = @source_category if @source_category
+    base[HOST_HEADER] = @source_host if @source_host
+    base[HOST_HEADER] = `hostname`.strip unless @source_host
+    base[NAME_HEADER] = @source_name if @source_name
     
     if @compress
       if @compress_encoding == "gzip"
         base["Content-Encoding"] = "gzip"
       else
-      base["Content-Encoding"] = "deflate"
+        base["Content-Encoding"] = "deflate"
       end
     end
 
@@ -221,8 +240,6 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       base["Content-Type"] = CONTENT_TYPE_LOG
     end
     
-    base.merge(@extra_headers) if @extra_headers
-
     base
 
   end # def get_headers
@@ -291,30 +308,17 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
   private
   def get_metric_name(event, name)
-    template = get_metric_config("name_template")
-    name = template.gsub(METRIC_PLACEHOLDER, name) if template
+    name = @metrics_name.gsub(METRIC_PLACEHOLDER, name) if @metrics_name
     event.sprintf(name)
   end # def get_metric_name
-
-  def get_metric_config(key)
-    return @metrics_config[key] if @metrics_config && @metrics_config[key]
-    nil
-  end # def get_metric_config
 
   private
   def event2carbon2(event)
     timestamp = get_timestamp(event)
-    intrinsic_tags = {}
-    intrinsic_tags.merge(get_metric_config("intrinsic_tags")) if get_metric_config("intrinsic_tags").is_a?(Hash)
-    intrinsic_tags = expand_hash(intrinsic_tags, event)
-    meta_tags = {}
-    meta_tags["_sourceCategory"] = @source_category if @source_category
-    meta_tags.merge(get_metric_config("meta_tags")) if get_metric_config("meta_tags").is_a?(Hash)
-    meta_tags = expand_hash(meta_tags, event)
     
     expand_hash(@metrics, event).flat_map { |key, value|
-      intrinsic_tags["metric"] = get_metric_name(event, key)
-      "#{hash2line(intrinsic_tags, event)}  #{hash2line(meta_tags, event)} #{value} #{timestamp}"
+      @metrics_intrinsic_tags["name"] = get_metric_name(event, key)
+      "#{hash2line(@metrics_intrinsic_tags, event)}  #{hash2line(@metrics_meta_tags, event)} #{value} #{timestamp}"
     }.join('\n')
 
   end # def event2carbon2
