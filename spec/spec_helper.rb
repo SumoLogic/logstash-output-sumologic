@@ -7,6 +7,7 @@ class Server
   
   def initialize
     @queue = Array.new
+    @header = {}
   end
 
   def size
@@ -17,15 +18,21 @@ class Server
     @queue.pop
   end
 
+  def header
+    @header
+  end
+
   def empty?
     @queue.empty?
   end
 
-  def puts(data)
+  def puts(data, header)
+    @header = header
     data.split("\n").each do |line|
-      @queue << "#{line}\n"
+      @queue << "#{line}"
     end
   end
+
 end
 
 class LogStash::Outputs::SumoLogic
@@ -36,7 +43,7 @@ class LogStash::Outputs::SumoLogic
   end
   
   def send_request(content)
-    @server.puts(content)
+    @server.puts(content, get_headers())
   end
 
 end
