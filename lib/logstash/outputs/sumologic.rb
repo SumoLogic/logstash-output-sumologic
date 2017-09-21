@@ -73,7 +73,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   #     metrics => { "%{host}/uptime" => "%{uptime_1m}" }
   config :metrics, :validate => :hash
   
-  # Defines the format of the metric, support GRAPHITE or CARBON2
+  # Defines the format of the metric, support "graphite" or "carbon2"
   config :metrics_format, :validate => :string, :default => CARBON2
 
   # Define the metric name looking, the placeholder '*' will be replaced with the actual metric name
