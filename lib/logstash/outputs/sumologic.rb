@@ -72,6 +72,9 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # For example: 
   #     metrics => { "%{host}/uptime" => "%{uptime_1m}" }
   config :metrics, :validate => :hash
+
+  # Create metric(s) automatically from @json fields if configured. 
+  config :json_as_metrics, :validate => :boolean, :default => false
   
   # Defines the format of the metric, support "graphite" or "carbon2"
   config :metrics_format, :validate => :string, :default => CARBON2
@@ -239,7 +242,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       end
     end
 
-    if @metrics
+    if @metrics || @json_as_metrics
       if @metrics_format == CARBON2
         base[CONTENT_TYPE] = CONTENT_TYPE_CARBON2
       elsif @metrics_format == GRAPHITE
@@ -261,11 +264,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   private 
   def event2content(event)
     if @metrics
-      if @metrics_format == CARBON2
-        event2carbon2(event)
-      else
-        event2graphite(event)
-      end
+      event2metrics(event)
     else
       event2log(event)
     end
@@ -276,6 +275,21 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     @format = "%{@json}" if @format.nil? || @format.empty?
     expand(@format, event)
   end # def event2log
+
+  private
+  def event2metrics(event)
+    timestamp = get_timestamp(event)
+    expand_hash(@metrics, event).flat_map { |key, value|
+      if is_number?(value)
+        if @metrics_format == CARBON2
+          @intrinsic_tags["metric"] = get_metrics_name(event, key)
+          "#{hash2line(@intrinsic_tags, event)} #{hash2line(@meta_tags, event)}#{value} #{timestamp}"
+        else
+          "#{get_metrics_name(event, key)} #{value} #{timestamp}" 
+        end
+      end
+    }.reject(&:nil?).join("\n")
+  end # def event2graphite
 
   private
   def expand(template, event)
@@ -296,15 +310,20 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     end
   end # def map_event
 
-  private
-  def event2graphite(event)
-    timestamp = get_timestamp(event)
-    expand_hash(@metrics, event).flat_map { |key, value|
-      "#{get_metrics_name(event, key)} #{value} #{timestamp}"
-    }.join("\n")
-  end # def event2graphite
+  # private
+  # def event2graphite(event)
+  #   timestamp = get_timestamp(event)
+  #   expand_hash(@metrics, event).flat_map { |key, value|
+  #     "#{get_metrics_name(event, key)} #{value} #{timestamp}" if (is_number?(value))
+  #   }.reject(&:blank?).join("\n")
+  # end # def event2graphite
 
   private
+  def is_number?(me)
+    me.to_f.to_s == me.to_s || me.to_i.to_s == me.to_s
+  end
+
+ private
   def expand_hash(hash, event)
     hash.reduce({}) do |acc, kv|
       k, v = kv
@@ -326,16 +345,14 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     event.sprintf(name)
   end # def get_metrics_name
 
-  private
-  def event2carbon2(event)
-    timestamp = get_timestamp(event)
-    
-    expand_hash(@metrics, event).flat_map { |key, value|
-      @intrinsic_tags["metric"] = get_metrics_name(event, key)
-      "#{hash2line(@intrinsic_tags, event)} #{hash2line(@meta_tags, event)}#{value} #{timestamp}"
-    }.join("\n")
-
-  end # def event2carbon2
+  # private
+  # def event2carbon2(event)
+  #   timestamp = get_timestamp(event)
+  #   expand_hash(@metrics, event).flat_map { |key, value|
+  #     @intrinsic_tags["metric"] = get_metrics_name(event, key)
+  #     "#{hash2line(@intrinsic_tags, event)} #{hash2line(@meta_tags, event)}#{value} #{timestamp}" if (is_number?(value))
+  #   }.reject(&:blank?).join("\n")
+  # end # def event2carbon2
 
   private
   def hash2line(hash, event)

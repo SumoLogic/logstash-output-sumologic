@@ -15,7 +15,11 @@ class Server
   end
 
   def pop
-    @queue.pop
+    if !@queue.empty?
+      @queue.pop
+    else
+      puts "EMPTY"
+    end
   end
 
   def header
@@ -26,7 +30,7 @@ class Server
     @queue.empty?
   end
 
-  def puts(data, header)
+  def push(data, header)
     @header = header
     data.split("\n").each do |line|
       @queue << line
@@ -43,7 +47,7 @@ class LogStash::Outputs::SumoLogic
   end
   
   def send_request(content)
-    @server.puts(content, get_headers())
+    @server.push(content, get_headers())
   end
 
 end

@@ -230,4 +230,26 @@ describe LogStash::Outputs::SumoLogic do
     end
   end
 
+  context "metrics with non-number value should be dropped (carbon2)" do
+    subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "metrics" => { "cpu1" => "%{cpu1}", "cpu2" => "%{cpu2}", "cpu3" => "%{cpu3}" }, "intrinsic_tags" => {"host"=>"%{host}"}, "meta_tags" => {"foo" => "%{foo}"}) }
+    let(:event) { LogStash::Event.new("host" => "myHost", "foo" => "fancy", "cpu1" => 0.24, "cpu2" => "abc", "cpu3" => 0.11) }
+
+    it "include content" do
+      expect(server.pop).to match(/^host=myHost metric=cpu1  foo=fancy 0\.24 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu3  foo=fancy 0\.11 \d{10,}$/)
+      expect(server.empty?).to eq(true)
+    end
+  end
+
+  context "metrics with non-number value should be dropped (graphite)" do
+    subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "metrics" => { "cpu1" => "%{cpu1}", "cpu2" => "%{cpu2}", "cpu3" => "%{cpu3}" }, "metrics_format" => "graphite") }
+    let(:event) { LogStash::Event.new("host" => "myHost", "foo" => "fancy", "cpu1" => 0.24, "cpu2" => "abc", "cpu3" => 0.11) }
+
+    it "include content" do
+      expect(server.pop).to match(/^cpu1 0\.24 \d{10,}$/)
+      expect(server.pop).to match(/^cpu3 0\.11 \d{10,}$/)
+      expect(server.empty?).to eq(true)
+    end
+  end
+
 end
