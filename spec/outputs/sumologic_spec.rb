@@ -220,4 +220,14 @@ describe LogStash::Outputs::SumoLogic do
     end
   end
 
+  context "with multiple metrics mapping" do
+    subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "metrics" => { "cpu1" => "%{cpu1}", "cpu2" => "%{cpu2}" }, "intrinsic_tags" => {"host"=>"%{host}"}, "meta_tags" => {"foo" => "%{foo}"}) }
+    let(:event) { LogStash::Event.new("host" => "myHost", "foo" => "fancy", "cpu1" => 0.24, "cpu2" => 0.11) }
+
+    it "include content" do
+      expect(server.pop).to match(/^host=myHost metric=cpu1  foo=fancy 0\.24 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu2  foo=fancy 0\.11 \d{10,}$/)
+    end
+  end
+
 end

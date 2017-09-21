@@ -6,7 +6,7 @@ require "logstash/outputs/sumologic"
 class Server
   
   def initialize
-    @queue = Array.new
+    @queue = Queue.new
     @header = {}
   end
 
@@ -29,7 +29,7 @@ class Server
   def puts(data, header)
     @header = header
     data.split("\n").each do |line|
-      @queue << "#{line}"
+      @queue << line
     end
   end
 

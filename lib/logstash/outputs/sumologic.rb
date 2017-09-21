@@ -301,7 +301,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     timestamp = get_timestamp(event)
     expand_hash(@metrics, event).flat_map { |key, value|
       "#{get_metrics_name(event, key)} #{value} #{timestamp}"
-    }.join('\n')
+    }.join("\n")
   end # def event2graphite
 
   private
@@ -333,7 +333,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     expand_hash(@metrics, event).flat_map { |key, value|
       @intrinsic_tags["metric"] = get_metrics_name(event, key)
       "#{hash2line(@intrinsic_tags, event)} #{hash2line(@meta_tags, event)}#{value} #{timestamp}"
-    }.join('\n')
+    }.join("\n")
 
   end # def event2carbon2
 
