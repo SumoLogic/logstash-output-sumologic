@@ -65,16 +65,19 @@ Logon to Sumo Logic [web app](https://prod-www.sumologic.net/ui/) and run
 | `source_name`       | string  | No        |               | Source name to appear when searching in Sumo Logic by `_sourceName`.
 | `source_host`       | string  | No        |               | Source host to appear when searching in Sumo Logic by `_sourceHost`. If not specified, it will be the machine host name.
 | `extra_headers`     | hash    | No        |               | Extra fields need to be send in HTTP header.
-| `compress`          | boolean | No        | `false`       | Enable or disable compression
-| `compress_encoding` | string  | No        | `'deflate'`   | Encoding method of comressing, can only be `'deflate'` or `'gzip'`
+| `compress`          | boolean | No        | `false`       | Enable or disable compression.
+| `compress_encoding` | string  | No        | `'deflate'`   | Encoding method of comressing, can only be `'deflate'` or `'gzip'`.
 | `interval`          | number  | No        | `0`           | The maximum time for waiting before send in batch, in ms. 
-| `format`            | string  | No        | `"%{@timestamp} %{host} %{message}"` | For log only, the formatter of log lines. Use `%{@json}` as the placeholder for whole event json
-| `json_mapping`      | hash    | No        |               | Override the structure of `{@json}` tag with the given key value pairs
-| `metrics`           | hash    | No        |               | If defined, the event will be sent as metrics. Keys will be the metrics name and values will be the metrics value
-| `metrics_format`    | string  | No        | `'cabon2'`    | Metrics format, can only be `'graphite'` or `'carbon2'`
-| `metrics_name`      | string  | No        | `*`           | Define the metric name looking, the placeholder '*' will be replaced with the actual metric name
-| `intrinsic_tags`    | hash    | No        |               | For carbon2 format only, send extra intrinsic key-value pairs other than `metric` (which is the metric name)
-| `meta_tags`         | hash    | No        |               | For carbon2 format only, send metadata key-value pairs
+| `format`            | string  | No        | `"%{@timestamp} %{host} %{message}"` | For log only, the formatter of log lines. Use `%{@json}` as the placeholder for whole event json.
+| `json_mapping`      | hash    | No        |               | Override the structure of `{@json}` tag with the given key value pairs.
+| `metrics`           | hash    | No        |               | If defined, the event will be sent as metrics. Keys will be the metrics name and values will be the metrics value.
+| `metrics_format`    | string  | No        | `'cabon2'`    | Metrics format, can only be `'graphite'` or `'carbon2'`.
+| `metrics_name`      | string  | No        | `*`           | Define the metric name looking, the placeholder '*' will be replaced with the actual metric name.
+| `intrinsic_tags`    | hash    | No        |               | For carbon2 format only, send extra intrinsic key-value pairs other than `metric` (which is the metric name).
+| `meta_tags`         | hash    | No        |               | For carbon2 format only, send metadata key-value pairs.
+| `fields_as_metrics` | boolean | No        | `false`       | If `true`, all fields in logstash event with number value will be sent as a metrics (with filtering by `fields_include` and `fields_exclude` ; the `metics` parameter is ignored.
+| `fields_include`    | array   | No        | all fields    | Working with `fields_as_metrics` parameter, only the fields which full name matching these RegEx pattern(s) will be included in metrics.
+| `fields_exclude`    | array   | No        | none          | Working with `fields_as_metrics` parameter, the fields which full name matching these RegEx pattern(s) will be ignored in metrics.
 
 This plugin is based on [logstash-mixin-http_client](https://github.com/logstash-plugins/logstash-mixin-http_client) thus we also support all HTTP layer parameters like proxy, authentication, retry, etc.
 

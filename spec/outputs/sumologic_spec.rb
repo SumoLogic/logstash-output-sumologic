@@ -252,4 +252,102 @@ describe LogStash::Outputs::SumoLogic do
     end
   end
 
+  context "fields_as_metrics (carbon2)" do
+    subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "fields_as_metrics" => true, "intrinsic_tags" => {"host"=>"%{host}"}, "meta_tags" => {"foo" => "%{foo}"}) }
+    let(:event) { LogStash::Event.new(
+      "host" => "myHost", 
+      "foo" => "fancy", 
+      "cpu" => [0.24, 0.11, 0.75, 0.28], 
+      "storageRW" => 51, 
+      "bar" => "blahblah", 
+      "blkio" => {
+        "write_ps" => 5,
+        "read_ps" => 2,
+        "total_ps" => 0
+      })}
+
+    it "include content" do
+      expect(server.pop).to match(/^host=myHost metric=blkio\.write_ps  foo=fancy 5 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=blkio\.read_ps  foo=fancy 2 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=blkio\.total_ps  foo=fancy 0 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.0  foo=fancy 0\.24 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.1  foo=fancy 0\.11 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.2  foo=fancy 0\.75 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.3  foo=fancy 0\.28 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=storageRW  foo=fancy 51 \d{10,}$/)
+      expect(server.empty?).to eq(true)
+    end
+  end
+
+  context "fields_as_metrics (graphite)" do
+    subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "fields_as_metrics" => true, "metrics_format" => "graphite") }
+    let(:event) { LogStash::Event.new(
+      "host" => "myHost", 
+      "foo" => "fancy", 
+      "cpu" => [0.24, 0.11, 0.75, 0.28], 
+      "storageRW" => 51, 
+      "bar" => "blahblah", 
+      "blkio" => {
+        "write_ps" => 0,
+        "read_ps" => 0,
+        "total_ps" => 0
+      })}
+
+    it "include content" do
+      expect(server.pop).to match(/^blkio.write_ps 0 \d{10,}$/)
+      expect(server.pop).to match(/^blkio.read_ps 0 \d{10,}$/)
+      expect(server.pop).to match(/^blkio.total_ps 0 \d{10,}$/)
+      expect(server.pop).to match(/^cpu\.0 0\.24 \d{10,}$/)
+      expect(server.pop).to match(/^cpu\.1 0\.11 \d{10,}$/)
+      expect(server.pop).to match(/^cpu\.2 0\.75 \d{10,}$/)
+      expect(server.pop).to match(/^cpu\.3 0\.28 \d{10,}$/)
+      expect(server.pop).to match(/^storageRW 51 \d{10,}$/)
+    end
+  end
+
+  context "fields_include is honored when fields_as_metrics (carbon2)" do
+    subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "fields_as_metrics" => true, "intrinsic_tags" => {"host"=>"%{host}"}, "meta_tags" => {"foo" => "%{foo}"}, "fields_include" => ["cpu*"]) }
+    let(:event) { LogStash::Event.new(
+      "host" => "myHost", 
+      "foo" => "fancy", 
+      "cpu" => [0.24, 0.11, 0.75, 0.28], 
+      "storageRW" => 51, 
+      "bar" => "blahblah", 
+      "blkio" => {
+        "write_ps" => 5,
+        "read_ps" => 2,
+        "total_ps" => 0
+      })}
+
+    it "include content" do
+      expect(server.pop).to match(/^host=myHost metric=cpu\.0  foo=fancy 0\.24 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.1  foo=fancy 0\.11 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.2  foo=fancy 0\.75 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.3  foo=fancy 0\.28 \d{10,}$/)
+      expect(server.empty?).to eq(true)
+    end
+  end
+
+  context "fields_exclude is honored when fields_as_metrics (carbon2)" do
+    subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "fields_as_metrics" => true, "intrinsic_tags" => {"host"=>"%{host}"}, "meta_tags" => {"foo" => "%{foo}"}, "fields_include" => ["cpu*"], "fields_exclude" => [".*1"]) }
+    let(:event) { LogStash::Event.new(
+      "host" => "myHost", 
+      "foo" => "fancy", 
+      "cpu" => [0.24, 0.11, 0.75, 0.28], 
+      "storageRW" => 51, 
+      "bar" => "blahblah", 
+      "blkio" => {
+        "write_ps" => 5,
+        "read_ps" => 2,
+        "total_ps" => 0
+      })}
+
+    it "include content" do
+      expect(server.pop).to match(/^host=myHost metric=cpu\.0  foo=fancy 0\.24 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.2  foo=fancy 0\.75 \d{10,}$/)
+      expect(server.pop).to match(/^host=myHost metric=cpu\.3  foo=fancy 0\.28 \d{10,}$/)
+      expect(server.empty?).to eq(true)
+    end
+  end
+
 end

@@ -19,4 +19,9 @@ bin/logstash-plugin install <full path of .gem>
 
 # How to run test with rspec
 The test requires JRuby to run. So you need to install [JRuby](http://jruby.org/) and [RVM](https://rvm.io/) (for switching between JRuby and Ruby) first.
+And then run:
+```bash
+rvm use jruby
+rspec spec/
+```
 
