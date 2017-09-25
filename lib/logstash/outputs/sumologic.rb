@@ -152,7 +152,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     else
       @semaphore.synchronize {
         now = Time.now
-        @pile << event
+        @pile << content
 
         if now - @timer > @interval # ready to send
           send_request(@pile.join($/))
