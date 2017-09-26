@@ -4,7 +4,7 @@ This is an output plugin for [Logstash](https://github.com/elastic/logstash).
 It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
 
 ## Getting Started
-This guide is for the users just want download the binary and make the plugin work. For the developer, please refer to the [Developer Guide](DEVELOPER.md)
+This guide is for the users just want to download the binary and make the plugin work. For the developer, please refer to the [Developer Guide](DEVELOPER.md)
 
 ### 1. Create a Sumo Logic HTTP source
 Create a [Sumo Logic](https://www.sumologic.com/) free account if you currently don't have one.
@@ -47,7 +47,7 @@ bin/logstash -f samples/metrics.conf
 A mocked event will be sent to Sumo Logic cloud service as 1 minute and 15 minutes rate metrics.
 
 ### 6. Get result from Sumo Logic web app
-Logon to Sumo Logic [web app](https://prod-www.sumologic.net/ui/) and run 
+Logon to Sumo Logic [web app](https://service.sumologic.com/) and run 
  - [Log Search](http://help.sumologic.com/Search)
  - [Live Tail](http://help.sumologic.com/Search/Live_Tail)
  - [Metrics Search](https://help.sumologic.com/Metrics)
@@ -67,9 +67,9 @@ Logon to Sumo Logic [web app](https://prod-www.sumologic.net/ui/) and run
 | `extra_headers`     | hash    | No        |               | Extra fields need to be send in HTTP header.
 | `compress`          | boolean | No        | `false`       | Enable or disable compression.
 | `compress_encoding` | string  | No        | `'deflate'`   | Encoding method of comressing, can only be `'deflate'` or `'gzip'`.
-| `interval`          | number  | No        | `0`           | The maximum time for waiting before send in batch, in ms. 
+| `interval`          | number  | No        | `0`           | The maximum time for waiting before send in batch, in ms.
 | `format`            | string  | No        | `"%{@timestamp} %{host} %{message}"` | For log only, the formatter of log lines. Use `%{@json}` as the placeholder for whole event json.
-| `json_mapping`      | hash    | No        |               | Override the structure of `{@json}` tag with the given key value pairs.
+| `json_mapping`      | hash    | No        |               | Override the structure of `{@json}` tag with the given key value pairs. <br />For example:<br />`json_mapping => { "foo" => "%{@timestamp}" "bar" => "%{message}" }`<br />will create messages as:<br />`{"foo":"2016-07-27T18:37:59.460Z","bar":"hello world"}`<br />`{"foo":"2016-07-27T18:38:01.222Z","bar":"bye!"}`
 | `metrics`           | hash    | No        |               | If defined, the event will be sent as metrics. Keys will be the metrics name and values will be the metrics value.
 | `metrics_format`    | string  | No        | `'cabon2'`    | Metrics format, can only be `'graphite'` or `'carbon2'`.
 | `metrics_name`      | string  | No        | `*`           | Define the metric name looking, the placeholder '*' will be replaced with the actual metric name.
