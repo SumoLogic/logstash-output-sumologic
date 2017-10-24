@@ -1,11 +1,11 @@
 Gem::Specification.new do |s|
   s.name          = "logstash-output-sumologic"
-  s.version       = "1.0.4"
+  s.version       = "1.1.0"
   s.licenses      = ["Apache-2.0"]
   s.summary       = "Deliever the log to Sumo Logic cloud service."
-  s.description   = "This gem is a Logstash output plugin to deliver the log to Sumo Logic cloud service. Go to https://github.com/SumoLogic/logstash-output-sumologic for getting help, reporting issues, etc."
+  s.description   = "This gem is a Logstash output plugin to deliver the log or metrics to Sumo Logic cloud service. Go to https://github.com/SumoLogic/logstash-output-sumologic for getting help, reporting issues, etc."
   s.authors       = ["Sumo Logic"]
-  s.email         = "byi@sumologic.com"
+  s.email         = "collection@sumologic.com "
   s.homepage      = "https://github.com/SumoLogic/logstash-output-sumologic"
   s.require_paths = ["lib"]
 
@@ -19,6 +19,6 @@ Gem::Specification.new do |s|
 
   # Gem dependencies
   s.add_runtime_dependency "logstash-core-plugin-api", "~> 2.0"
-  s.add_runtime_dependency "logstash-codec-plain"
-  s.add_development_dependency "logstash-devutils"
+  s.add_runtime_dependency "logstash-codec-plain", "~> 0"
+  s.add_development_dependency "logstash-devutils", "~> 0"
 end

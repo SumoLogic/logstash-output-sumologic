@@ -1,1 +1,4 @@
+.DS_Store
 *.gem
+.vscode/*
+Gemfile.lock
