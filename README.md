@@ -67,7 +67,7 @@ Logon to Sumo Logic [web app](https://service.sumologic.com/) and run
 | `extra_headers`     | hash    | No        |               | Extra fields need to be send in HTTP header.
 | `compress`          | boolean | No        | `false`       | Enable or disable compression.
 | `compress_encoding` | string  | No        | `"deflate"`   | Encoding method of comressing, can only be `"deflate"` or `"gzip"`.
-| `interval`          | number  | No        | `0`           | The maximum time for waiting before send in batch, in ms.
+| `interval`          | number  | No        | `0`           | The maximum time for waiting before send in batch, in seconds.
 | `format`            | string  | No        | `"%{@timestamp} %{host} %{message}"` | For log only, the formatter of log lines. Use `%{@json}` as the placeholder for whole event json.
 | `json_mapping`      | hash    | No        |               | Override the structure of `{@json}` tag with the given key value pairs. <br />For example:<br />`json_mapping => { "foo" => "%{@timestamp}" "bar" => "%{message}" }`<br />will create messages as:<br />`{"foo":"2016-07-27T18:37:59.460Z","bar":"hello world"}`<br />`{"foo":"2016-07-27T18:38:01.222Z","bar":"bye!"}`
 | `metrics`           | hash    | No        |               | If defined, the event will be sent as metrics. Keys will be the metrics name and values will be the metrics value.
