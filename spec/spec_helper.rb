@@ -14,6 +14,14 @@ class Server
     @queue.length
   end
 
+  def all
+    @queue.size.times.map { @queue.pop }
+  end
+
+  def all_sorted
+    all.sort { |x, y| y <=> x }
+  end
+
   def pop
     if !@queue.empty?
       @queue.pop
