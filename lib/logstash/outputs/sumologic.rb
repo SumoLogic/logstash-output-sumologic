@@ -7,6 +7,7 @@ require 'thread'
 require "uri"
 require "zlib"
 require "stringio"
+require "socket"
 
 # Now you can use logstash to deliver logs to Sumo Logic
 #
@@ -101,7 +102,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   
   public
   def register
-    @source_host = `hostname`.strip unless @source_host
+    @source_host = Socket.gethostname unless @source_host
 
     # initialize request pool
     @request_tokens = SizedQueue.new(@pool_max)
