@@ -35,4 +35,7 @@ RUN echo export PATH=/usr/share/logstash/bin:\$PATH >> ~/.bashrc
 
 WORKDIR /root/logstash-output-sumologic
 
-ENTRYPOINT ["/bin/bash"]
+COPY keep-alive.sh /etc/keep-alive.sh
+RUN chmod +x /etc/keep-alive.sh
+
+ENTRYPOINT ["/etc/keep-alive.sh"]
