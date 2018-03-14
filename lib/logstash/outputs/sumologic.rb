@@ -121,14 +121,22 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   
   public
   def receive(event)
-    if event == LogStash::SHUTDOWN
-      finished
-      return
-    end
+    begin
+ 
+      if event == LogStash::SHUTDOWN
+        finished
+        return
+      end
 
-    content = event2content(event)
-    queue_and_send(content)
-    
+      content = event2content(event)
+      queue_and_send(content)
+
+    rescue
+      log_failure(
+        "Error when processing event",
+        :event => event
+      )
+    end
   end # def receive
 
   public
