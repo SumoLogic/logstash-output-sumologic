@@ -59,8 +59,17 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # The encoding method of compress
   config :compress_encoding, :validate =>:string, :default => DEFLATE
 
-  # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately  
+  # Accumulate messages in (x) seconds as a message pile (if total size less than pile_max); 0 means sending every events immediately
   config :interval, :validate => :number, :default => 0
+
+  # Max size of single message pile; if a message is larger than this, it will be sent individually
+  config :pile_size_max, :validate => :number, :default => 1024000
+
+  # Max size of messages can be hold in memory
+  config :queue_max, :validate => :number, :default => 4096
+
+  # Max number of the HTTP senders working in parallel
+  config :sender_max, :validate => :number, :default => 10
 
   # The formatter of log message, by default is message with timestamp and host as prefix
   # Use %{@json} tag to send whole event
@@ -103,51 +112,61 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   public
   def register
     @source_host = Socket.gethostname unless @source_host
+    @queue_max = 1 if @queue_max < 1
+    @sender_max = 1 if @sender_max < 1
 
-    # initialize request pool
-    @request_tokens = SizedQueue.new(@pool_max)
-    @pool_max.times { |t| @request_tokens << true }
-    @timer = Time.now
     @pile = Array.new
+    @pile_size = 0
     @semaphore = Mutex.new
+
+    @sender_queue = SizedQueue.new(@queue_max)
+
+    @request_tokens = SizedQueue.new(@sender_max)
+    @sender_max.times { |t| @request_tokens << t }
+
+    @is_running = true
+
+    start_piler()
+    start_sender()
+
     connect
+
   end # def register
 
   public
   def multi_receive(events)
     events.each { |event| receive(event) }
-    client.execute!
+    if @interval <= 0
+      client.execute!
+    end
   end # def multi_receive
   
   public
   def receive(event)
     begin
- 
-      if event == LogStash::SHUTDOWN
-        finished
-        return
-      end
-
+      log_debug("received event", :event => event)
       content = event2content(event)
-      queue_and_send(content)
-
-    rescue
+      if @interval <= 0
+        send_request(content)
+      else
+        pile_input(content)
+      end
+    rescue Exception => ex
       log_failure(
         "Error when processing event",
-        :event => event
+        :event => event,
+        :exception => ex
       )
     end
   end # def receive
 
   public
   def close
-    @semaphore.synchronize {
-      send_request(@pile.join($/))
-      @pile.clear
-    }
+    @is_running = false
+    enqueue_pile()
+    drain_queue()
     client.close
   end # def close
-
 
   private
   def connect
@@ -155,26 +174,66 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def connect
   
   private
-  def queue_and_send(content)
-    if @interval <= 0 # means send immediately
-      send_request(content)
-    else
-      @semaphore.synchronize {
-        now = Time.now
-        @pile << content
+  def start_piler()
+    Thread.new { 
+      while @is_running
+        enqueue_pile()
+        Stud.stoppable_sleep(@interval) { !@is_running }
+      end # while
+    }
+  end # def start_piler
+  
+  private
+  def start_sender()
+    Thread.new { 
+      while @is_runnin
+        dequeue_and_send()
+      end # while
+    }
+  end # def start_sender
 
-        if now - @timer > @interval # ready to send
-          send_request(@pile.join($/))
-          @timer = now
+  private
+  def pile_input(content)
+    @semaphore.synchronize {
+      if @pile_size + content.length > @pile_size_max
+        enqueue_pile()
+      end
+      @pile << content
+      @pile_size += content.length
+    }
+  end # def pile_in
+  
+  private
+  def enqueue_pile()
+    if @pile_size > 0
+      @semaphore.synchronize {
+        if @pile_size > 0
+          @sender_queue << @pile.join($/)
           @pile.clear
+          @pile_size = 0
         end
       }
     end
-  end
+  end # def enqueue_pile
+
+  private
+  def dequeue_and_send()
+    while !@request_tokens.empty? && !@sender_queue.empty?
+      send_request(@sender_queue.pop())
+    end
+    client.execute!
+  end # def dequeue_and_send
+
+  private
+  def drain_queue()
+    while !@sender_queue.empty?
+      dequeue_and_send()
+    end
+  end # def drain_queue
 
   private
   def send_request(content)
-    token = @request_tokens.pop
+    token = @request_tokens.pop()
     body = compress(content)
     headers = get_headers()
 
@@ -276,11 +335,13 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
   private 
   def event2content(event)
-    if @metrics || @fields_as_metrics
+    content = if @metrics || @fields_as_metrics
       event2metrics(event)
     else
       event2log(event)
     end
+    log_debug("encode event to content", :content => content)
+    content
   end # def event2content
 
   private
@@ -299,6 +360,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     }.reject(&:nil?).join("\n")
   end # def event2metrics
 
+  private
   def event_as_metrics(event)
     hash = event2hash(event)
     acc = {}
@@ -309,6 +371,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     acc
   end # def event_as_metrics
 
+  private
   def get_single_line(event, key, value, timestamp)
     full = get_metrics_name(event, key)
     if !ALWAYS_EXCLUDED.include?(full) &&  \
@@ -322,22 +385,23 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
         "#{full} #{value} #{timestamp}" 
       end
     end
-end # def get_single_line
+  end # def get_single_line
 
-def dotify(acc, key, value, prefix)
-  pk = prefix ? "#{prefix}.#{key}" : key.to_s
-  if value.is_a?(Hash)
-    value.each do |k, v|
-      dotify(acc, k, v, pk)
+  private
+  def dotify(acc, key, value, prefix)
+    pk = prefix ? "#{prefix}.#{key}" : key.to_s
+    if value.is_a?(Hash)
+      value.each do |k, v|
+        dotify(acc, k, v, pk)
+      end
+    elsif value.is_a?(Array)
+      value.each_with_index.map { |v, i|
+        dotify(acc, i.to_s, v, pk)
+      }
+    else
+      acc[pk] = value
     end
-  elsif value.is_a?(Array)
-    value.each_with_index.map { |v, i|
-      dotify(acc, i.to_s, v, pk)
-    }
-  else
-    acc[pk] = value
-  end
-end # def dotify
+  end # def dotify
 
   private
   def expand(template, event)
@@ -363,9 +427,9 @@ end # def dotify
   private
   def is_number?(me)
     me.to_f.to_s == me.to_s || me.to_i.to_s == me.to_s
-  end
+  end # def is_number?
 
- private
+  private
   def expand_hash(hash, event)
     hash.reduce({}) do |acc, kv|
       k, v = kv
@@ -373,8 +437,8 @@ end # def dotify
       exp_v = expand(v, event)
       acc[exp_k] = exp_v
       acc
-    end # def expand_hash
-  end
+    end
+  end # def expand_hash
   
   private
   def get_timestamp(event)
@@ -402,5 +466,12 @@ end # def dotify
   def log_failure(message, opts)
     @logger.error(message, opts)
   end # def log_failure
+
+  private
+  def log_debug(message, opts)
+    # @logger.debug(message, opts)
+    puts 
+    puts message + " " + opts.to_s
+  end # def log_debug
 
 end # class LogStash::Outputs::SumoLogic
