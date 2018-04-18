@@ -119,7 +119,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     @pile_size = 0
     @semaphore = Mutex.new
 
-    @sender_queue = SizedQueue.new(@queue_max)
+    @queue = SizedQueue.new(@queue_max)
 
     @request_tokens = SizedQueue.new(@sender_max)
     @sender_max.times { |t| @request_tokens << t }
@@ -208,7 +208,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     if @pile_size > 0
       @semaphore.synchronize {
         if @pile_size > 0
-          @sender_queue << @pile.join($/)
+          @queue << @pile.join($/)
           @pile.clear
           @pile_size = 0
         end
@@ -218,15 +218,15 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
   private
   def dequeue_and_send()
-    while !@request_tokens.empty? && !@sender_queue.empty?
-      send_request(@sender_queue.pop())
+    while !@request_tokens.empty? && !@queue.empty?
+      send_request(@queue.pop())
     end
     client.execute!
   end # def dequeue_and_send
 
   private
   def drain_queue()
-    while !@sender_queue.empty?
+    while !@queue.empty?
       dequeue_and_send()
     end
   end # def drain_queue
