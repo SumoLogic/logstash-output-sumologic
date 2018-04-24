@@ -341,7 +341,9 @@ end # def dotify
 
   private
   def expand(template, event)
-    template = template.gsub("%{@json}", LogStash::Json.dump(event2hash(event))) if template.include? "%{@json}"
+    hash = event2hash(event)
+    dump = LogStash::Json.dump(hash)
+    template = template.gsub("%{@json}") { dump }
     event.sprintf(template)
   end # def expand
 
@@ -381,7 +383,7 @@ end # def dotify
 
   private
   def get_metrics_name(event, name)
-    name = @metrics_name.gsub(METRICS_NAME_PLACEHOLDER, name) if @metrics_name
+    name = @metrics_name.gsub(METRICS_NAME_PLACEHOLDER) { name } if @metrics_name
     event.sprintf(name)
   end # def get_metrics_name
 
