@@ -53,6 +53,9 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # Include extra HTTP headers on request if needed 
   config :extra_headers, :validate => :hash
 
+  # Expand the metadata variables
+  config :expand_metadata, :validate => :boolean, :default => false
+
   # Compress the payload 
   config :compress, :validate => :boolean, :default => false
 
@@ -237,10 +240,19 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     base = {}
     base = @extra_headers if @extra_headers.is_a?(Hash)
 
-    base[CATEGORY_HEADER] = event.sprintf(@source_category) if @source_category
-    base[HOST_HEADER] = event.sprintf(@source_host) if @source_host
-    base[NAME_HEADER] = event.sprintf(@source_name) if @source_name
     base[CLIENT_HEADER] = 'logstash-output-sumologic'
+
+    if @source_category
+      base[CATEGORY_HEADER] = @expand_metadata ? event.sprintf(@source_category) : @source_category
+    end
+
+    if @source_host
+      base[HOST_HEADER] = @expand_metadata ? event.sprintf(@source_host) : @source_host
+    end
+
+    if @source_name
+      base[NAME_HEADER] = @expand_metadata ? event.sprintf(@source_name) : @source_name
+    end
     
     if @compress
       if @compress_encoding == GZIP
