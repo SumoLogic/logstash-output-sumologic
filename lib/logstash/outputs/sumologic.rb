@@ -53,6 +53,9 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # Include extra HTTP headers on request if needed 
   config :extra_headers, :validate => :hash
 
+  # Expand the metadata variables
+  config :expand_metadata, :validate => :boolean, :default => false
+
   # Compress the payload 
   config :compress, :validate => :boolean, :default => false
 
@@ -129,7 +132,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       end
 
       content = event2content(event)
-      queue_and_send(content)
+      queue_and_send(content, event)
 
     rescue
       log_failure(
@@ -155,16 +158,16 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def connect
   
   private
-  def queue_and_send(content)
+  def queue_and_send(content, event)
     if @interval <= 0 # means send immediately
-      send_request(content)
+      send_request(content, event)
     else
       @semaphore.synchronize {
         now = Time.now
         @pile << content
 
         if now - @timer > @interval # ready to send
-          send_request(@pile.join($/))
+          send_request(@pile.join($/), event)
           @timer = now
           @pile.clear
         end
@@ -173,10 +176,10 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end
 
   private
-  def send_request(content)
+  def send_request(content, event)
     token = @request_tokens.pop
     body = compress(content)
-    headers = get_headers()
+    headers = get_headers(event)
 
     request = client.send(:parallel).send(:post, @url, :body => body, :headers => headers)
     request.on_complete do
@@ -232,15 +235,24 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def gzip
 
   private
-  def get_headers()
+  def get_headers(event)
 
     base = {}
     base = @extra_headers if @extra_headers.is_a?(Hash)
 
-    base[CATEGORY_HEADER] = @source_category if @source_category
-    base[HOST_HEADER] = @source_host if @source_host
-    base[NAME_HEADER] = @source_name if @source_name
     base[CLIENT_HEADER] = 'logstash-output-sumologic'
+
+    if @source_category
+      base[CATEGORY_HEADER] = @expand_metadata ? event.sprintf(@source_category) : @source_category
+    end
+
+    if @source_host
+      base[HOST_HEADER] = @expand_metadata ? event.sprintf(@source_host) : @source_host
+    end
+
+    if @source_name
+      base[NAME_HEADER] = @expand_metadata ? event.sprintf(@source_name) : @source_name
+    end
     
     if @compress
       if @compress_encoding == GZIP
