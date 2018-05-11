@@ -3,11 +3,12 @@ require "logstash/json"
 require "logstash/namespace"
 require "logstash/outputs/base"
 require "logstash/plugin_mixins/http_client"
+require "net/https"
+require "socket"
+require "stringio"
 require 'thread'
 require "uri"
 require "zlib"
-require "stringio"
-require "socket"
 
 # Now you can use logstash to deliver logs to Sumo Logic
 #
@@ -16,26 +17,18 @@ require "socket"
 # send your logs to your account at Sumo Logic.
 #
 class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
-  include LogStash::PluginMixins::HttpClient
-  
-  config_name "sumologic"
+  declare_threadsafe!
 
-  CONTENT_TYPE = "Content-Type"
-  CONTENT_TYPE_LOG = "text/plain"
-  CONTENT_TYPE_GRAPHITE = "application/vnd.sumologic.graphite"
-  CONTENT_TYPE_CARBON2 = "application/vnd.sumologic.carbon2"
-  CATEGORY_HEADER = "X-Sumo-Category"
-  HOST_HEADER = "X-Sumo-Host"
-  NAME_HEADER = "X-Sumo-Name"
-  CLIENT_HEADER = "X-Sumo-Client"
-  TIMESTAMP_FIELD = "@timestamp"
-  METRICS_NAME_PLACEHOLDER = "*"
-  GRAPHITE = "graphite"
-  CARBON2 = "carbon2"
-  CONTENT_ENCODING = "Content-Encoding"
-  DEFLATE = "deflate"
-  GZIP = "gzip"
-  ALWAYS_EXCLUDED = [ "@timestamp", "@version" ]
+  require "logstash/outputs/sumologic/common"
+  require "logstash/outputs/sumologic/payload_builder"
+  require "logstash/outputs/sumologic/header_builder"
+  
+  include LogStash::PluginMixins::HttpClient
+  include LogStash::Outputs::SumoLogic::Common
+  include LogStash::Outputs::SumoLogic::PayloadBuilder
+  include LogStash::Outputs::SumoLogic::HeaderBuilder
+
+  config_name "sumologic"
 
   # The URL to send logs to. This should be given when creating a HTTP Source
   # on Sumo Logic web app. See http://help.sumologic.com/Send_Data/Sources/HTTP_Source
@@ -59,16 +52,16 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # The encoding method of compress
   config :compress_encoding, :validate =>:string, :default => DEFLATE
 
-  # Accumulate messages in (x) seconds as a message pile (if total size less than pile_max); 0 means sending every events immediately
+  # Accumulate events in (x) seconds as a pile/request; 0 means sending every events in isolated requests
   config :interval, :validate => :number, :default => 0
 
-  # Max size of single message pile; if a message is larger than this, it will be sent individually
-  config :pile_size_max, :validate => :number, :default => 1024000
+  # Accumulate events for up to (x) bytes as a pile/request; messages larger than this size will be sent in isolated requests
+  config :pile_max, :validate => :number, :default => 1024000
 
-  # Max size of messages can be hold in memory
+  # Max # of events can be hold in memory before sending
   config :queue_max, :validate => :number, :default => 4096
 
-  # Max number of the HTTP senders working in parallel
+  # Max # of HTTP senders working in parallel
   config :sender_max, :validate => :number, :default => 10
 
   # The formatter of log message, by default is message with timestamp and host as prefix
@@ -111,10 +104,14 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   
   public
   def register
-    @source_host = Socket.gethostname unless @source_host
+
+    connect()
+
     @queue_max = 1 if @queue_max < 1
     @sender_max = 1 if @sender_max < 1
-
+    
+    @format = "%{@json}" if @format.nil? || @format.empty?
+    
     @pile = Array.new
     @pile_size = 0
     @semaphore = Mutex.new
@@ -129,8 +126,6 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     start_piler()
     start_sender()
 
-    connect
-
   end # def register
 
   public
@@ -144,7 +139,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   public
   def receive(event)
     begin
-      log_debug("received event", :event => event)
+      log_dbg("received event", :event => event)
       content = event2content(event)
       if @interval <= 0
         send_request(content)
@@ -152,7 +147,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
         pile_input(content)
       end
     rescue Exception => ex
-      log_failure(
+      log_err(
         "Error when processing event",
         :event => event,
         :exception => ex
@@ -169,8 +164,19 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def close
 
   private
-  def connect
-    # TODO: ping endpoint make sure config correct
+  def connect()
+    uri = URI.parse(@url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    request = Net::HTTP::Get.new(uri.request_uri)
+    res = http.request(request)
+    if puts res.code != 200
+      log_err(
+        "Cannot connect to given url",
+        :url => @url,
+        :code => res.code
+      )
+    end
   end # def connect
   
   private
@@ -186,7 +192,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   private
   def start_sender()
     Thread.new { 
-      while @is_runnin
+      while @is_running
         dequeue_and_send()
       end # while
     }
@@ -195,7 +201,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   private
   def pile_input(content)
     @semaphore.synchronize {
-      if @pile_size + content.length > @pile_size_max
+      if @pile_size + content.length > @pile_max
         enqueue_pile()
       end
       @pile << content
@@ -244,7 +250,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
     request.on_success do |response|
       if response.code < 200 || response.code > 299
-        log_failure(
+        log_err(
           "HTTP response #{response.code}",
           :body => body,
           :headers => headers
@@ -253,7 +259,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     end
 
     request.on_failure do |exception|
-      log_failure(
+      log_err(
         "Could not fetch URL",
         :body => body,
         :headers => headers,
@@ -290,6 +296,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     stream.string.bytes.to_a.pack('c*')
   end # def gzip
 
+<<<<<<< HEAD
   private
   def get_headers()
 
@@ -474,4 +481,6 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     puts message + " " + opts.to_s
   end # def log_debug
 
+=======
+>>>>>>> divide header and payload builder
 end # class LogStash::Outputs::SumoLogic
