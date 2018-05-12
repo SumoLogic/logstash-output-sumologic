@@ -11,7 +11,7 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
     result = plugin.build_payload(event)
   end
 
-  context "shlould build log payload in default format" do
+  context "should build log payload in default format" do
 
     let(:plugin) { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234") }
     let(:event) { LogStash::Event.new("host" => "myHost", "message" => "Hello world") }

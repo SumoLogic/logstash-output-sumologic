@@ -11,7 +11,7 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
     result = plugin.build_header()
   end
 
-  context "shlould build headers by default" do
+  context "should build headers by default" do
     let(:plugin) { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234") }
 
     specify {

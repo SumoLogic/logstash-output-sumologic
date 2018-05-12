@@ -20,8 +20,10 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   declare_threadsafe!
 
   require "logstash/outputs/sumologic/common"
+  require "logstash/outputs/sumologic/statistics"
   require "logstash/outputs/sumologic/payload_builder"
   require "logstash/outputs/sumologic/header_builder"
+  require "logstash/outputs/sumologic/piler"
   
   include LogStash::PluginMixins::HttpClient
   include LogStash::Outputs::SumoLogic::Common

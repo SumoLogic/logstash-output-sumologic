@@ -1,5 +1,4 @@
 module LogStash; module Outputs; class SumoLogic;
-
   module Common
 
     # global constants
