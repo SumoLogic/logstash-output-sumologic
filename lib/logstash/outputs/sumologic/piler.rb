@@ -43,38 +43,38 @@ module LogStash; module Outputs; class SumoLogic;
     def input(entry)
       @semaphore.synchronize {
         if (@is_pile)
-          if @pile_size + entry.length > @pile_max
+          if @pile_size + entry.bytesize > @pile_max
             enq_and_clear()
           end
           @pile << entry
-          @pile_size += content.length
-          stats.record_input(entry)
+          @pile_size += content.bytesize
+          @stats.record_input(entry)
         else
           enq(entry)
         end # if
       }
-  end # def input
+    end # def input
 
+    def enq(payload)
+      @queue << payload
+      @stats.record_enque(payload)
+    end # def enque
+
+    def deq()
+      payload = @queue.deq()
+      @stats.record_deque(payload)
+      payload
+    end # def deq
+    
     private
     def enq_and_clear()
       if (@pile.size > 0)
         enq(pile.join($/))
         @pile = Array.new
         @pile_size = 0
-        stats.record_clear_pile()
+        @stats.record_clear_pile()
       end
     end # def enq_and_clear
 
-    def enq(payload)
-      @queue << payload
-      stats.record_enqueue(payload)
-    end # def enqueue
-
-    def deq()
-      payload = @queue.deq()
-      stats.record_dequeue(payload)
-      payload
-    end # def deq
-    
   end
 end; end; end

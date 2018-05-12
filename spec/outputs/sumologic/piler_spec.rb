@@ -48,5 +48,35 @@ describe LogStash::Outputs::SumoLogic::Piler do
 
   end # context
 
+  context "in non-pile mode" do
+
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(10, 0, 10, stats) }
+
+    it "enque immediately after input" do
+      expect(stats.current_pile_items).to be 0
+      expect(stats.current_queue_items).to be 0
+      piler.input("I'm a log line")
+      expect(stats.current_pile_items).to be 0
+      expect(stats.current_queue_items).to be 1
+      expect(stats.current_queue_bytes).to be 14
+    end
+
+    it "deque correctly" do
+      expect(stats.current_queue_items).to be 0
+      expect(stats.total_enque_times).to be 0
+      piler.input("I'm a log line")
+      expect(stats.total_enque_times).to be 1
+      expect(stats.current_queue_items).to be 1
+      expect(stats.current_queue_bytes).to be 14
+      expect(stats.total_deque_times).to be 0
+      expect(piler.deq()).to eq "I'm a log line"
+      expect(stats.current_queue_items).to be 0
+      expect(stats.current_queue_bytes).to be 0
+      expect(stats.total_deque_times).to be 1
+    end
+
+  end # context
+
 end # describe
 
