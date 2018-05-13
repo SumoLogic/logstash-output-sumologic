@@ -7,6 +7,8 @@ module LogStash; module Outputs; class SumoLogic;
     attr_reader :is_running
     attr_reader :is_pile
 
+    TEAR_DOWN_TIMEOUT = 10
+
     def initialize(interval, pile_max, queue_max, stats)
       @interval = interval
       @pile_max = pile_max
@@ -22,42 +24,68 @@ module LogStash; module Outputs; class SumoLogic;
     end # def initialize
 
     def start()
-      if (@is_pile)
+      if (@is_running)
+        log_warn "start when piler is running, ignore", {}
+      else
         @is_running = true
-        Thread.new { 
-          while @is_running
-            enq_and_clear()
-            Stud.stoppable_sleep(@interval) { !@is_running }
-          end # while
-        }
+        if (@is_pile)
+          Thread.new { 
+            while @is_running
+              enq_and_clear()
+              Stud.stoppable_sleep(@interval) { !@is_running }
+            end # while
+          }
+        end # if
       end # if
     end # def start
 
-    def stop()
-      if (@is_pile)
+    def stop(timeout = TEAR_DOWN_TIMEOUT, no_warn = false)
+      if (!@is_running && !no_warn)
+        log_warn "stop when piler is not running, ignore", {}
+      else
         @is_running = false
-        enq_and_clear()
+        if (@is_pile)
+          teardown_t = Thread.new {
+            sleep timeout
+            while(!@queue.empty?)
+              if (no_warn)
+                @queue.deq()
+              else
+                log_warn("drop message (teardown)", "message" => @queue.deq())
+              end
+            end
+          }
+          enq_and_clear()
+          teardown_t.join
+        end # if
       end # if
     end # def stop
 
     def input(entry)
-      @semaphore.synchronize {
-        if (@is_pile)
+      if (!@is_running)
+        log_warn "piler is not running, message ignored", "message" => entry
+      elsif (@is_pile)
+        @semaphore.synchronize {
           if @pile_size + entry.bytesize > @pile_max
-            enq_and_clear()
+            enq(@pile.join($/))
+            @pile.clear
+            @pile_size = 0
+            @stats.record_clear_pile()
           end
           @pile << entry
-          @pile_size += content.bytesize
+          @pile_size += entry.bytesize
           @stats.record_input(entry)
-        else
-          enq(entry)
-        end # if
-      }
+        }
+      else
+        enq(entry)
+      end # if
     end # def input
 
     def enq(payload)
-      @queue << payload
-      @stats.record_enque(payload)
+      if (payload.bytesize > 0)
+        @queue << payload
+        @stats.record_enque(payload)
+      end
     end # def enque
 
     def deq()
@@ -65,14 +93,18 @@ module LogStash; module Outputs; class SumoLogic;
       @stats.record_deque(payload)
       payload
     end # def deq
-    
+
     private
     def enq_and_clear()
       if (@pile.size > 0)
-        enq(pile.join($/))
-        @pile = Array.new
-        @pile_size = 0
-        @stats.record_clear_pile()
+        @semaphore.synchronize {
+          if (@pile.size > 0)
+            enq(@pile.join($/))
+            @pile.clear
+            @pile_size = 0
+            @stats.record_clear_pile()
+          end
+        }
       end
     end # def enq_and_clear
 
