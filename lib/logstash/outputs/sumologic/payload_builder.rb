@@ -12,7 +12,6 @@ module LogStash; module Outputs; class SumoLogic;
       else
         build_log_payload(event)
       end
-      log_dbg("payload", :payload => payload)
       payload
     end
   

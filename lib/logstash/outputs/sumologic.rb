@@ -127,7 +127,6 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   public
   def receive(event)
     begin
-      log_dbg("received event", :event => event)
       content = build_payload(event)
       @piler.input(content)
     rescue Exception => ex

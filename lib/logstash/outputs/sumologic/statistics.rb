@@ -37,6 +37,7 @@ module LogStash; module Outputs; class SumoLogic;
       @total_request_bytes = 0
       @total_request_bytes_compressed = 0
       @total_response = Hash.new(0)
+      @semaphore = Mutex.new
     end # def initialize
 
     def record_input(entry)
@@ -75,13 +76,17 @@ module LogStash; module Outputs; class SumoLogic;
     end # def record_request
 
     def record_response_success(code)
-      now = @total_response[code]
-      @total_response[code] = now + 1
+      @semaphore.synchronize {
+        now = @total_response[code]
+        @total_response[code] = now + 1
+      }
     end # def record_response_success
 
     def record_response_failure()
-      now = @total_response['failure']
-      @total_response['failure'] = now + 1
+      @semaphore.synchronize {
+        now = @total_response['failure']
+        @total_response['failure'] = now + 1
+      }
     end # def record_response_failure
 
   end

@@ -147,5 +147,19 @@ describe LogStash::Outputs::SumoLogic::Sender do
 
   end # context
 
+  context "close()" do
+
+    let(:plugin) { LogStash::Outputs::SumoLogic.new("url" => "http://localhost:#{TestServer::PORT}", "sender_max" => 10) }
+    let(:event) { LogStash::Event.new("host" => "myHost", "message" => "Hello world") }
+
+    it "should drain out messages" do
+      plugin.register
+      30.times { plugin.receive(event) }
+      plugin.close
+      expect(plugin.stats.total_response[200]).to eq 31
+    end
+
+  end # context
+
 end # describe
 

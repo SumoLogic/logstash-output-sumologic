@@ -26,7 +26,7 @@ module LogStash; module Outputs; class SumoLogic;
 
     def start()
       if (@is_running)
-        log_warn "start when piler is running, ignore", {}
+        log_warn "start when piler is running, ignore"
       else
         @is_running = true
         if (@is_pile)
@@ -41,8 +41,9 @@ module LogStash; module Outputs; class SumoLogic;
     end # def start
 
     def stop(timeout = TEAR_DOWN_TIMEOUT, no_warn = false)
+      log_info "piler is shutting down..."
       if (!@is_running && !no_warn)
-        log_warn "stop when piler is not running, ignore", {}
+        log_warn "stop when piler is not running, ignore"
       else
         @is_running = false
         if (@is_pile)
@@ -60,6 +61,7 @@ module LogStash; module Outputs; class SumoLogic;
           teardown_t.join
         end # if
       end # if
+      log_info "piler is fully shut down"
     end # def stop
 
     def input(entry)
@@ -99,6 +101,7 @@ module LogStash; module Outputs; class SumoLogic;
       @queue.size.times.map {
         payload = @queue.deq()
         @stats.record_deque(payload)
+        payload
       }
     end # def drain
 

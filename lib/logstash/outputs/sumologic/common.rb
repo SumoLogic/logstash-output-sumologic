@@ -26,7 +26,7 @@ module LogStash; module Outputs; class SumoLogic;
     SLEEP_BEFORE_REQUE = 5
     LOG_TO_CONSOLE = true
 
-    def log_info(message, opts)
+    def log_info(message, *opts)
       if LOG_TO_CONSOLE
         puts "[INFO:#{DateTime::now}]#{message} #{opts.to_s}"
       else
@@ -34,7 +34,7 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def log_info
 
-    def log_warn(message, opts)
+    def log_warn(message, *opts)
       if LOG_TO_CONSOLE
         puts "\e[33m[WARN:#{DateTime::now}]#{message} #{opts.to_s}\e[0m"
       else
@@ -42,7 +42,7 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def log_warn
 
-    def log_err(message, opts)
+    def log_err(message, *opts)
       if LOG_TO_CONSOLE
         puts "\e[31m[ERR :#{DateTime::now}]#{message} #{opts.to_s}\e[0m"
       else
@@ -50,7 +50,7 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def log_err
 
-    def log_dbg(message, opts)
+    def log_dbg(message, *opts)
       if LOG_TO_CONSOLE
         puts "\e[36m[DBG :#{DateTime::now}]#{message} #{opts.to_s}\e[0m"
       else

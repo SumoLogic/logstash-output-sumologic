@@ -19,21 +19,29 @@ module LogStash; module Outputs; class SumoLogic;
       @sender_max.times { |t| @@request_tokens << t }
       @@headers = build_header()
 
-      @@sender_t = Thread.new { 
+      @@sender_t = Thread.new {
         while @@sender_running
           content = @piler.deq()
           send_request(content)
         end # while
+        log_info "draining messages in pile..."
         @piler.drain().map { |content| 
           send_request(content)
         }
+        log_info "waiting message sent out..."
+        while @@request_tokens.size < @sender_max
+          sleep 1
+        end # while
       }
     end # def start_sender
 
     def stop_sender()
+      log_info "sender is shutting down..."
       @@sender_running = false
+      @piler.enq("PLUGIN STOPPED")
       @@sender_t.join
       client.close()
+      log_info "sender is fully shut down"
     end # def stop_sender
     
     def connect(use_ssl = true)
