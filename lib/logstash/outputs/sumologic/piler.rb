@@ -1,7 +1,8 @@
+# encoding: utf-8
+
 module LogStash; module Outputs; class SumoLogic;
   class Piler
 
-    require "logstash/outputs/sumologic/common"
     include LogStash::Outputs::SumoLogic::Common
 
     attr_reader :is_running
@@ -93,6 +94,13 @@ module LogStash; module Outputs; class SumoLogic;
       @stats.record_deque(payload)
       payload
     end # def deq
+
+    def drain()
+      @queue.size.times.map {
+        payload = @queue.deq()
+        @stats.record_deque(payload)
+      }
+    end # def drain
 
     private
     def enq_and_clear()

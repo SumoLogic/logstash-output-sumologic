@@ -1,7 +1,9 @@
+# encoding: utf-8
+require "logstash/json"
+
 module LogStash; module Outputs; class SumoLogic;
   module PayloadBuilder
     
-    require "logstash/outputs/sumologic/common"
     include LogStash::Outputs::SumoLogic::Common
     
     def build_payload(event)

@@ -1,7 +1,8 @@
+# encoding: utf-8
+
 module LogStash; module Outputs; class SumoLogic;
   module HeaderBuilder
 
-    require "logstash/outputs/sumologic/common"
     include LogStash::Outputs::SumoLogic::Common
     
     def build_header()

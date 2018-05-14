@@ -3,12 +3,6 @@ require "logstash/json"
 require "logstash/namespace"
 require "logstash/outputs/base"
 require "logstash/plugin_mixins/http_client"
-require "net/https"
-require "socket"
-require "stringio"
-require 'thread'
-require "uri"
-require "zlib"
 
 # Now you can use logstash to deliver logs to Sumo Logic
 #
@@ -24,11 +18,13 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   require "logstash/outputs/sumologic/payload_builder"
   require "logstash/outputs/sumologic/header_builder"
   require "logstash/outputs/sumologic/piler"
+  require "logstash/outputs/sumologic/sender"
   
   include LogStash::PluginMixins::HttpClient
   include LogStash::Outputs::SumoLogic::Common
   include LogStash::Outputs::SumoLogic::PayloadBuilder
   include LogStash::Outputs::SumoLogic::HeaderBuilder
+  include LogStash::Outputs::SumoLogic::Sender
 
   config_name "sumologic"
 
@@ -107,25 +103,14 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   public
   def register
 
-    connect()
-
-    @queue_max = 1 if @queue_max < 1
-    @sender_max = 1 if @sender_max < 1
-    
+    @queue_max = 50 if @queue_max < 50
+    @sender_max = 10 if @sender_max < 10
     @format = "%{@json}" if @format.nil? || @format.empty?
     
-    @pile = Array.new
-    @pile_size = 0
-    @semaphore = Mutex.new
-
-    @queue = SizedQueue.new(@queue_max)
-
-    @request_tokens = SizedQueue.new(@sender_max)
-    @sender_max.times { |t| @request_tokens << t }
-
-    @is_running = true
-
-    start_piler()
+    connect()
+    @stats = Statistics.new()
+    @piler = Piler.new(@interval, @pile_max, @queue_max, @stats)
+    @piler.start()
     start_sender()
 
   end # def register
@@ -133,21 +118,14 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   public
   def multi_receive(events)
     events.each { |event| receive(event) }
-    if @interval <= 0
-      client.execute!
-    end
   end # def multi_receive
   
   public
   def receive(event)
     begin
       log_dbg("received event", :event => event)
-      content = event2content(event)
-      if @interval <= 0
-        send_request(content)
-      else
-        pile_input(content)
-      end
+      content = build_payload(event)
+      @piler.input(content)
     rescue Exception => ex
       log_err(
         "Error when processing event",
@@ -159,12 +137,11 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
   public
   def close
-    @is_running = false
-    enqueue_pile()
-    drain_queue()
-    client.close
+    @piler.stop()
+    stop_sender()
   end # def close
 
+<<<<<<< HEAD
   private
   def connect()
     uri = URI.parse(@url)
@@ -298,191 +275,4 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     stream.string.bytes.to_a.pack('c*')
   end # def gzip
 
-<<<<<<< HEAD
-  private
-  def get_headers()
-
-    base = {}
-    base = @extra_headers if @extra_headers.is_a?(Hash)
-
-    base[CATEGORY_HEADER] = @source_category if @source_category
-    base[HOST_HEADER] = @source_host if @source_host
-    base[NAME_HEADER] = @source_name if @source_name
-    base[CLIENT_HEADER] = 'logstash-output-sumologic'
-    
-    if @compress
-      if @compress_encoding == GZIP
-        base[CONTENT_ENCODING] = GZIP
-      elsif 
-        base[CONTENT_ENCODING] = DEFLATE
-      else
-        log_failure(
-          "Unrecogonized compress encoding",
-          :encoding => @compress_encoding
-        )
-      end
-    end
-
-    if @metrics || @fields_as_metrics
-      if @metrics_format == CARBON2
-        base[CONTENT_TYPE] = CONTENT_TYPE_CARBON2
-      elsif @metrics_format == GRAPHITE
-        base[CONTENT_TYPE] = CONTENT_TYPE_GRAPHITE
-      else
-        log_failure(
-          "Unrecogonized metrics format",
-          :format => @metrics_format
-        )
-      end
-    else
-      base[CONTENT_TYPE] = CONTENT_TYPE_LOG
-    end
-    
-    base
-
-  end # def get_headers
-
-  private 
-  def event2content(event)
-    content = if @metrics || @fields_as_metrics
-      event2metrics(event)
-    else
-      event2log(event)
-    end
-    log_debug("encode event to content", :content => content)
-    content
-  end # def event2content
-
-  private
-  def event2log(event)
-    @format = "%{@json}" if @format.nil? || @format.empty?
-    expand(@format, event)
-  end # def event2log
-
-  private
-  def event2metrics(event)
-    timestamp = get_timestamp(event)
-    source = expand_hash(@metrics, event) unless @fields_as_metrics
-    source = event_as_metrics(event) if @fields_as_metrics
-    source.flat_map { |key, value|
-      get_single_line(event, key, value, timestamp)
-    }.reject(&:nil?).join("\n")
-  end # def event2metrics
-
-  private
-  def event_as_metrics(event)
-    hash = event2hash(event)
-    acc = {}
-    hash.keys.each do |field|
-      value = hash[field]
-      dotify(acc, field, value, nil)
-    end
-    acc
-  end # def event_as_metrics
-
-  private
-  def get_single_line(event, key, value, timestamp)
-    full = get_metrics_name(event, key)
-    if !ALWAYS_EXCLUDED.include?(full) &&  \
-      (fields_include.empty? || fields_include.any? { |regexp| full.match(regexp) }) && \
-      !(fields_exclude.any? {|regexp| full.match(regexp)}) && \
-      is_number?(value)
-      if @metrics_format == CARBON2
-        @intrinsic_tags["metric"] = full
-        "#{hash2line(@intrinsic_tags, event)} #{hash2line(@meta_tags, event)}#{value} #{timestamp}"
-      else
-        "#{full} #{value} #{timestamp}" 
-      end
-    end
-  end # def get_single_line
-
-  private
-  def dotify(acc, key, value, prefix)
-    pk = prefix ? "#{prefix}.#{key}" : key.to_s
-    if value.is_a?(Hash)
-      value.each do |k, v|
-        dotify(acc, k, v, pk)
-      end
-    elsif value.is_a?(Array)
-      value.each_with_index.map { |v, i|
-        dotify(acc, i.to_s, v, pk)
-      }
-    else
-      acc[pk] = value
-    end
-  end # def dotify
-
-  private
-  def expand(template, event)
-    hash = event2hash(event)
-    dump = LogStash::Json.dump(hash)
-    template = template.gsub("%{@json}") { dump }
-    event.sprintf(template)
-  end # def expand
-
-  private 
-  def event2hash(event)
-    if @json_mapping
-      @json_mapping.reduce({}) do |acc, kv|
-        k, v = kv
-        acc[k] = event.sprintf(v)
-        acc
-      end
-    else
-      event.to_hash
-    end
-  end # def map_event
-
-  private
-  def is_number?(me)
-    me.to_f.to_s == me.to_s || me.to_i.to_s == me.to_s
-  end # def is_number?
-
-  private
-  def expand_hash(hash, event)
-    hash.reduce({}) do |acc, kv|
-      k, v = kv
-      exp_k = expand(k, event)
-      exp_v = expand(v, event)
-      acc[exp_k] = exp_v
-      acc
-    end
-  end # def expand_hash
-  
-  private
-  def get_timestamp(event)
-    event.get(TIMESTAMP_FIELD).to_i
-  end # def get_timestamp
-
-  private
-  def get_metrics_name(event, name)
-    name = @metrics_name.gsub(METRICS_NAME_PLACEHOLDER) { name } if @metrics_name
-    event.sprintf(name)
-  end # def get_metrics_name
-
-  private
-  def hash2line(hash, event)
-    if (hash.is_a?(Hash) && !hash.empty?)
-      expand_hash(hash, event).flat_map { |k, v|
-        "#{k}=#{v} "
-      }.join()
-    else
-      ""
-    end
-  end # hash2line
-
-  private
-  def log_failure(message, opts)
-    @logger.error(message, opts)
-  end # def log_failure
-
-  private
-  def log_debug(message, opts)
-    # @logger.debug(message, opts)
-    puts 
-    puts message + " " + opts.to_s
-  end # def log_debug
-
-=======
->>>>>>> divide header and payload builder
 end # class LogStash::Outputs::SumoLogic

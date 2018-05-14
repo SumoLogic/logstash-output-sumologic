@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 module LogStash; module Outputs; class SumoLogic;
   module Common
 

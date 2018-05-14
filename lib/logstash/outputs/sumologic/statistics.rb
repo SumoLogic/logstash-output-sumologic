@@ -1,7 +1,8 @@
+# encoding: utf-8
+
 module LogStash; module Outputs; class SumoLogic;
   class Statistics
 
-    require "logstash/outputs/sumologic/common"
     include LogStash::Outputs::SumoLogic::Common
 
     attr_reader :initialize_time
@@ -25,6 +26,7 @@ module LogStash; module Outputs; class SumoLogic;
     attr_reader :total_response_4xx
     attr_reader :total_response_504
     attr_reader :total_response_5xx
+    attr_reader :total_response_unknown
 
     def initialize()
       @initialize_time = Time.now()
@@ -38,16 +40,10 @@ module LogStash; module Outputs; class SumoLogic;
       @total_deque_bytes = 0
       @current_queue_items = 0
       @current_queue_bytes = 0
-      @total_sent_times = 0
-      @total_sent_entries = 0
-      @total_payload_bytes = 0
-      @total_payload_bytes_compressed = 0
-      @total_response = 0
-      @total_response_200 = 0
-      @total_response_419 = 0
-      @total_response_4xx = 0
-      @total_response_504 = 0
-      @total_response_5xx = 0
+      @total_request = 0
+      @total_request_bytes = 0
+      @total_request_bytes_compressed = 0
+      @total_response = Hash.new(0)
     end # def initialize
 
     def record_input(entry)
@@ -75,6 +71,25 @@ module LogStash; module Outputs; class SumoLogic;
       @current_queue_items -= 1
       @current_queue_bytes -= payload.bytesize
     end # def record_deque
+
+    @total_payload_bytes = 0
+    @total_payload_bytes_compressed = 0
+
+    def record_request(size, size_compressed)
+      @total_request += 1
+      @total_request_bytes += size
+      @total_request_bytes_compressed += size_compressed
+    end # def record_request
+
+    def record_response_success(code)
+      now = @total_response[code]
+      @total_response[code] = now + 1
+    end # def record_response_success
+
+    def record_response_failure()
+      now = @total_response['failure']
+      @total_response['failure'] = now + 1
+    end # def record_response_failure
 
   end
 end; end; end
