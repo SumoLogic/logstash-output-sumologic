@@ -100,13 +100,17 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # For carbon2 metrics format only, define the meta tags (which will NOT be used to identify the metrics)
   config :meta_tags, :validate => :hash, :default => {}
   
+  attr_reader :stats
+  
   public
   def register
 
-    @queue_max = 50 if @queue_max < 50
-    @sender_max = 10 if @sender_max < 10
+    @queue_max = 10 if @queue_max < 10
+    @sender_max = 1 if @sender_max < 1
     @format = "%{@json}" if @format.nil? || @format.empty?
-    
+    @compress_encoding = @compress_encoding.downcase
+    @metrics_format = @metrics_format.downcase
+
     connect()
     @stats = Statistics.new()
     @piler = Piler.new(@interval, @pile_max, @queue_max, @stats)

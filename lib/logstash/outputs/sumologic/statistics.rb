@@ -16,17 +16,10 @@ module LogStash; module Outputs; class SumoLogic;
     attr_reader :total_deque_bytes
     attr_reader :current_queue_items
     attr_reader :current_queue_bytes
-    attr_reader :total_sent_times
-    attr_reader :total_sent_entries
-    attr_reader :total_payload_bytes
-    attr_reader :total_payload_bytes_compressed
+    attr_reader :total_request
+    attr_reader :total_request_bytes
+    attr_reader :total_request_bytes_compressed 
     attr_reader :total_response
-    attr_reader :total_response_200
-    attr_reader :total_response_419
-    attr_reader :total_response_4xx
-    attr_reader :total_response_504
-    attr_reader :total_response_5xx
-    attr_reader :total_response_unknown
 
     def initialize()
       @initialize_time = Time.now()

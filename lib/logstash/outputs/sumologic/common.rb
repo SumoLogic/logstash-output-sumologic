@@ -23,6 +23,7 @@ module LogStash; module Outputs; class SumoLogic;
     DEFLATE = "deflate"
     GZIP = "gzip"
     ALWAYS_EXCLUDED = [ "@timestamp", "@version" ]
+    SLEEP_BEFORE_REQUE = 5
     LOG_TO_CONSOLE = true
 
     def log_info(message, opts)

@@ -67,10 +67,9 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def connect
     
-    private
     def send_request(content)
       token = @@request_tokens.pop()
-      body = compress(content)
+      body = compress_content(content)
   
       request = client.send(:background).send(:post, @url, :body => body, :headers => @@headers)
       
@@ -79,12 +78,17 @@ module LogStash; module Outputs; class SumoLogic;
       end
   
       request.on_success do |response|
-        @stats.record_request_success(response.code)
+        @stats.record_response_success(response.code)
         if response.code < 200 || response.code > 299
           log_err(
             "HTTP request rejected",
             :token => token,
             :code => response.code)
+          sleep SLEEP_BEFORE_REQUE
+          log_dbg(
+            "requeue message",
+            :token => token,
+            :message => content)
           @piler.enq(content)
         else
           log_dbg(
@@ -95,6 +99,7 @@ module LogStash; module Outputs; class SumoLogic;
       end
   
       request.on_failure do |exception|
+        @stats.record_response_failure()
         log_err(
           "Error in network transmission",
           :token => token,
@@ -102,6 +107,11 @@ module LogStash; module Outputs; class SumoLogic;
           :class => exception.class.name,
           :backtrace => exception.backtrace
         )
+        sleep SLEEP_BEFORE_REQUE
+        log_dbg(
+          "requeue message",
+          :token => token,
+          :message => content)
         @piler.enq(content)
       end      
 
@@ -109,8 +119,8 @@ module LogStash; module Outputs; class SumoLogic;
       request.call
     end # def send_request
 
-    private
-    def compress(content)
+    # private
+    def compress_content(content)
       if @compress
         if @compress_encoding == GZIP
           result = gzip(content)
@@ -123,7 +133,6 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def compress
     
-    private
     def gzip(content)
       stream = StringIO.new("w")
       stream.set_encoding("ASCII")
