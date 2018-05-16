@@ -1,5 +1,6 @@
 # encoding: utf-8
 require 'socket'
+
 require_relative './common'
 
 module LogStash; module Outputs; class SumoLogic;
@@ -26,7 +27,7 @@ module LogStash; module Outputs; class SumoLogic;
 
     def initialize(config)
       
-      @extra_headers = config['extra_headers']
+      @extra_headers = config['extra_headers'] ||= {}
       @source_category = config['source_category']
       @source_host = config['source_host']
       @source_name = config['source_name']
@@ -40,7 +41,7 @@ module LogStash; module Outputs; class SumoLogic;
     
     def build()
 
-      headers = @extra_headers ? @extra_headers : {}
+      headers = @extra_headers
       headers[CLIENT_HEADER] = CLIENT_HEADER_VALUE
 
       headers[CATEGORY_HEADER] = @source_category ? @source_category : CATEGORY_HEADER_DEFAULT

@@ -1,27 +1,51 @@
 # encoding: utf-8
 require "logstash/json"
+require "logstash/event"
+
+require_relative './common'
 
 module LogStash; module Outputs; class SumoLogic;
-  module PayloadBuilder
+  class PayloadBuilder
     
     include LogStash::Outputs::SumoLogic::Common
+
+    TIMESTAMP_FIELD = "@timestamp"
+    METRICS_NAME_TAG = "metric"
+    JSON_PLACEHOLDER = "%{@json}"
+    ALWAYS_EXCLUDED = [ "@timestamp", "@version" ]
     
-    def build_payload(event)
+    def initialize(config)
+      
+      @format = config['format'] ||= DEFAULT_LOG_FORMAT
+      @json_mapping = config['json_mapping']
+
+      @metrics = config['metrics']
+      @metrics_name = config['metrics_name']
+      @fields_as_metrics = config['fields_as_metrics']
+      @metrics_format = config['metrics_format']
+      @intrinsic_tags = config['intrinsic_tags'] ||= {}
+      @meta_tags = config['meta_tags'] ||= {}
+      @fields_include = config['fields_include'] ||= []
+      @fields_exclude = config['fields_exclude'] ||= []
+
+    end # def initialize
+
+    def build(event)
       payload = if @metrics || @fields_as_metrics
         build_metrics_payload(event)
       else
         build_log_payload(event)
       end
       payload
-    end
+    end # def build
   
     private
+
     def build_log_payload(event)
       log_dbg("build log payload from event", :event => event.to_hash)
       apply_template(@format, event)
     end # def event2log
   
-    private
     def build_metrics_payload(event)
       log_dbg("build metrics payload from event", :event => event.to_hash)
       timestamp = event.get(TIMESTAMP_FIELD).to_i
@@ -35,7 +59,6 @@ module LogStash; module Outputs; class SumoLogic;
       }.reject(&:nil?).join("\n")
     end # def event2metrics
   
-    private
     def event_as_metrics(event)
       hash = event2hash(event)
       acc = {}
@@ -46,23 +69,21 @@ module LogStash; module Outputs; class SumoLogic;
       acc
     end # def event_as_metrics
   
-    private
     def get_single_line(event, key, value, timestamp)
       full = get_metrics_name(event, key)
       if !ALWAYS_EXCLUDED.include?(full) &&  \
-        (fields_include.empty? || fields_include.any? { |regexp| full.match(regexp) }) && \
-        !(fields_exclude.any? {|regexp| full.match(regexp)}) && \
+        (@fields_include.empty? || @fields_include.any? { |regexp| full.match(regexp) }) && \
+        !(@fields_exclude.any? {|regexp| full.match(regexp)}) && \
         is_number?(value)
-        if @metrics_format == CARBON2
-          @intrinsic_tags["metric"] = full
-          "#{hash2line(@intrinsic_tags, event)} #{hash2line(@meta_tags, event)}#{value} #{timestamp}"
-        else
+        if @metrics_format == GRAPHITE
           "#{full} #{value} #{timestamp}" 
+        else
+          @intrinsic_tags[METRICS_NAME_TAG] = full
+          "#{hash2line(@intrinsic_tags, event)} #{hash2line(@meta_tags, event)}#{value} #{timestamp}"
         end
       end
     end # def get_single_line
   
-    private
     def dotify(acc, key, value, prefix)
       pk = prefix ? "#{prefix}.#{key}" : key.to_s
       if value.is_a?(Hash)
@@ -78,7 +99,6 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def dotify
   
-    private 
     def event2hash(event)
       if @json_mapping
         @json_mapping.reduce({}) do |acc, kv|
@@ -91,12 +111,10 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def map_event
   
-    private
     def is_number?(me)
       me.to_f.to_s == me.to_s || me.to_i.to_s == me.to_s
     end # def is_number?
   
-    private
     def expand_hash(hash, event)
       hash.reduce({}) do |acc, kv|
         k, v = kv
@@ -107,23 +125,20 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def expand_hash
     
-    private
     def apply_template(template, event)
-      if template.include? "%{@json}"
+      if template.include? JSON_PLACEHOLDER
         hash = event2hash(event)
         dump = LogStash::Json.dump(hash)
-        template = template.gsub("%{@json}") { dump }
+        template = template.gsub(JSON_PLACEHOLDER) { dump }
       end
       event.sprintf(template)
     end # def expand
     
-    private
     def get_metrics_name(event, name)
       name = @metrics_name.gsub(METRICS_NAME_PLACEHOLDER) { name } if @metrics_name
       event.sprintf(name)
     end # def get_metrics_name
   
-    private
     def hash2line(hash, event)
       if (hash.is_a?(Hash) && !hash.empty?)
         expand_hash(hash, event).flat_map { |k, v|
@@ -132,7 +147,7 @@ module LogStash; module Outputs; class SumoLogic;
       else
         ""
       end
-    end # hash2line
+    end # def hash2line
     
   end
 end; end; end
