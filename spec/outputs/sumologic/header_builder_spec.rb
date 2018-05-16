@@ -1,18 +1,16 @@
 # encoding: utf-8
-require "logstash/devutils/rspec/spec_helper"
-require "logstash/outputs/sumologic"
-require "logstash/event"
+require "logstash/outputs/sumologic/header_builder"
 
 describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   result = {}
 
   before :each do
-    result = plugin.build_header()
+    result = builder.build()
   end
 
   context "should build headers by default" do
-    let(:plugin) { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234") }
+    let(:builder) { LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234") }
 
     specify {
       expected = {
@@ -29,8 +27,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should override source_category" do
     
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new(
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
         "url" => "http://localhost/1234",
         "source_category" => "my source category")
     }
@@ -44,8 +42,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should override source_name" do
     
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new(
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
         "url" => "http://localhost/1234",
         "source_name" => "my source name")
     }
@@ -59,8 +57,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should override source_host" do
     
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new(
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
         "url" => "http://localhost/1234",
         "source_host" => "my source host")
     }
@@ -74,8 +72,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should hornor extra_headers" do
     
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new(
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
         "url" => "http://localhost/1234",
         "extra_headers" => {
           "foo" => "bar"
@@ -91,8 +89,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should hornor extra_headers but never overwrite pre-defined headers" do
     
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new(
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
         "url" => "http://localhost/1234",
         "extra_headers" => {
           "foo" => "bar",
@@ -120,8 +118,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should set content type correctly for log payload" do
 
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234")
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234")
     }
 
     specify {
@@ -130,10 +128,10 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   end # context
 
-  context "should set content type correctly for metrics payload (CarbonV2)" do
+  context "should set content type correctly for metrics payload (CarbonV2, default)" do
 
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new(
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
         "url" => "http://localhost/1234",
         "fields_as_metrics" => true)
     }
@@ -146,8 +144,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should set content type correctly for metrics payload (Graphite)" do
 
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new(
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
         "url" => "http://localhost/1234",
         "metrics_format" => "graphite",
         "fields_as_metrics" => true)
@@ -161,8 +159,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should set content encoding correctly for uncompressed payload" do
 
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234")
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234")
     }
 
     specify {
@@ -171,10 +169,10 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   end # context
 
-  context "should set content encoding correctly for compressed payload (deflate)" do
+  context "should set content encoding correctly for compressed payload (deflate, default)" do
 
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "compress" => true)
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234", "compress" => true)
     }
 
     specify {
@@ -185,8 +183,8 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   context "should set content encoding correctly for compressed payload (gzip)" do
 
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "compress" => true, "compress_encoding" => "gzip")
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234", "compress" => true, "compress_encoding" => "gzip")
     }
 
     specify {
