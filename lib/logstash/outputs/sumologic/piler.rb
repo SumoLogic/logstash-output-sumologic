@@ -10,10 +10,10 @@ module LogStash; module Outputs; class SumoLogic;
 
     attr_reader :is_pile
 
-    def initialize(interval, pile_max, queue, stats)
+    def initialize(queue, stats, config)
       
-      @interval = interval
-      @pile_max = pile_max
+      @interval = config['interval']
+      @pile_max = config['pile_max']
       @queue = queue
       @stats = stats
 

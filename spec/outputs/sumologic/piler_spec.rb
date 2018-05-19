@@ -14,46 +14,41 @@ describe LogStash::Outputs::SumoLogic::Piler do
   end
 
   context "working in pile mode if interval > 0 && pile_max > 0" do
-
+    let(:config) { {'queue_max' => 10, 'interval' => 10, 'pile_max' => 100 } }
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(10, 100, queue, stats) }
-
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(stats, config) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(queue, stats, config) }
     specify {
       expect(piler.is_pile).to be true
     }
-
   end # context
 
   context "working in non-pile mode if interval <= 0" do
-
+    let(:config) { {'queue_max' => 10, 'interval' => 0, 'pile_max' => 100 } }
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(0, 100, queue, stats) }
-
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(stats, config) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(queue, stats, config) }
     specify {
       expect(piler.is_pile).to be false
     }
-
   end # context
 
   context "working in non-pile mode if pile_max <= 0" do
-
+    let(:config) { {'queue_max' => 10, 'interval' => 10, 'pile_max' => 0 } }
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(10, 0, queue, stats) }
-
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(stats, config) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(queue, stats, config) }
     specify {
       expect(piler.is_pile).to be false
     }
-
   end # context
 
   context "in non-pile mode" do
 
+    let(:config) { {'queue_max' => 10, 'interval' => 0, 'pile_max' => 100 } }
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(0, 100, queue, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(stats, config) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(queue, stats, config) }
 
     it "enque immediately after input" do
       expect(stats.current_pile_items).to be 0
@@ -82,9 +77,10 @@ describe LogStash::Outputs::SumoLogic::Piler do
 
   context "in pile mode" do
 
+    let(:config) { {'queue_max' => 10, 'interval' => 5, 'pile_max' => 25 } }
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(5, 25, queue, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(stats, config) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(queue, stats, config) }
 
     it "wait in pile before size reach pile_max" do
       expect(stats.current_pile_items).to be 0
@@ -129,11 +125,12 @@ describe LogStash::Outputs::SumoLogic::Piler do
 
   end # context
 
-  context "message queue" do
+  context "pile to message queue" do
 
+    let(:config) { {'queue_max' => 5, 'interval' => 500, 'pile_max' => 5} }
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(5, stats) }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(500, 5, queue, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(stats, config) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(queue, stats, config) }
 
     it "enqueue payloads from pile before reach queue_max" do
       expect(stats.current_queue_items).to be 0
