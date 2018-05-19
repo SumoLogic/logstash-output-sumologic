@@ -1,6 +1,6 @@
 # encoding: utf-8
 require "logstash/devutils/rspec/spec_helper"
-require "logstash/outputs/sumologic"
+require "logstash/outputs/sumologic/piler"
 
 describe LogStash::Outputs::SumoLogic::Piler do
   
@@ -9,16 +9,17 @@ describe LogStash::Outputs::SumoLogic::Piler do
   end
 
   after :each do
-    piler.stop(0, true)
+    queue.drain()
+    piler.stop()
   end
 
   context "working in pile mode if interval > 0 && pile_max > 0" do
 
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(10, 100, 10, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(10, 100, queue, stats) }
 
     specify {
-      expect(piler.is_running).to be true
       expect(piler.is_pile).to be true
     }
 
@@ -27,10 +28,10 @@ describe LogStash::Outputs::SumoLogic::Piler do
   context "working in non-pile mode if interval <= 0" do
 
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(0, 100, 10, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(0, 100, queue, stats) }
 
     specify {
-      expect(piler.is_running).to be true
       expect(piler.is_pile).to be false
     }
 
@@ -39,10 +40,10 @@ describe LogStash::Outputs::SumoLogic::Piler do
   context "working in non-pile mode if pile_max <= 0" do
 
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(10, 0, 10, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(10, 0, queue, stats) }
 
     specify {
-      expect(piler.is_running).to be true
       expect(piler.is_pile).to be false
     }
 
@@ -51,7 +52,8 @@ describe LogStash::Outputs::SumoLogic::Piler do
   context "in non-pile mode" do
 
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(10, 0, 10, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(0, 100, queue, stats) }
 
     it "enque immediately after input" do
       expect(stats.current_pile_items).to be 0
@@ -70,7 +72,7 @@ describe LogStash::Outputs::SumoLogic::Piler do
       expect(stats.current_queue_items).to be 1
       expect(stats.current_queue_bytes).to be 14
       expect(stats.total_deque_times).to be 0
-      expect(piler.deq()).to eq "I'm a log line"
+      expect(queue.deq()).to eq "I'm a log line"
       expect(stats.current_queue_items).to be 0
       expect(stats.current_queue_bytes).to be 0
       expect(stats.total_deque_times).to be 1
@@ -81,7 +83,8 @@ describe LogStash::Outputs::SumoLogic::Piler do
   context "in pile mode" do
 
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(5, 25, 10, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(5, 25, queue, stats) }
 
     it "wait in pile before size reach pile_max" do
       expect(stats.current_pile_items).to be 0
@@ -129,7 +132,8 @@ describe LogStash::Outputs::SumoLogic::Piler do
   context "message queue" do
 
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
-    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(500, 5, 5, stats) }
+    let(:queue) { LogStash::Outputs::SumoLogic::MessageQueue.new(5, stats) }
+    let(:piler) { LogStash::Outputs::SumoLogic::Piler.new(500, 5, queue, stats) }
 
     it "enqueue payloads from pile before reach queue_max" do
       expect(stats.current_queue_items).to be 0
@@ -153,8 +157,11 @@ describe LogStash::Outputs::SumoLogic::Piler do
       sleep(3)
       expect(stats.current_queue_items).to be 5
       expect(stats.current_queue_bytes).to be 50
-      piler.stop(0, true)
+      queue.drain()
+      piler.stop()
       input_t.join
+      expect(stats.total_deque_times).to be 5
+      expect(stats.total_deque_bytes).to be 50
     end
 
     it "resume input thread if queue is drained" do
@@ -166,15 +173,16 @@ describe LogStash::Outputs::SumoLogic::Piler do
       sleep(3)
       expect(stats.total_deque_times).to be 0
       expect(stats.total_enque_times).to be 5
-      piler.deq()
+      queue.deq()
       sleep(1)
       expect(stats.total_deque_times).to be 1
       expect(stats.total_enque_times).to be 6
-      piler.deq()
+      queue.deq()
       sleep(1)
       expect(stats.total_deque_times).to be 2
       expect(stats.total_enque_times).to be 7
-      piler.stop(0, true)
+      queue.drain()
+      piler.stop()
       input_t.join
     end
 
