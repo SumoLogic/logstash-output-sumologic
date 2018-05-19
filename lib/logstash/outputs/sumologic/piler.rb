@@ -1,5 +1,4 @@
 # encoding: utf-8
-
 require_relative './common'
 require_relative './statistics'
 require_relative './message_queue'
@@ -10,8 +9,6 @@ module LogStash; module Outputs; class SumoLogic;
     include LogStash::Outputs::SumoLogic::Common
 
     attr_reader :is_pile
-
-    TEAR_DOWN_TIMEOUT = 10
 
     def initialize(interval, pile_max, queue, stats)
       

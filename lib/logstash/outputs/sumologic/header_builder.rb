@@ -1,6 +1,5 @@
 # encoding: utf-8
 require 'socket'
-
 require_relative './common'
 
 module LogStash; module Outputs; class SumoLogic;

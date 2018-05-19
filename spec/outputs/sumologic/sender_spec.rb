@@ -46,24 +46,6 @@ describe LogStash::Outputs::SumoLogic::Sender do
 
   end # context
 
-  context "compress (deflate)" do
-    let(:plugin) { LogStash::Outputs::SumoLogic.new("url" => "http://localhost", "compress" => true) }
-    specify {
-      expect(plugin.compress_content("abcde").bytesize).to eq(13)
-      expect(plugin.compress_content("aaaaa").bytesize).to eq(11)
-    }
-  end # context
-  
-  context "compress (gzip)" do
-    let(:plugin) {
-      LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "compress" => true, "compress_encoding" => "gzip")
-    }
-    specify {
-      expect(plugin.compress_content("abcde").bytesize).to eq(25)
-      expect(plugin.compress_content("aaaaa").bytesize).to eq(23)
-    }
-  end # context
-
   context "single sender" do
     let(:plugin) { LogStash::Outputs::SumoLogic.new("url" => "http://localhost:#{TestServer::PORT}", "sender_max" => 1) }
     let(:event) { LogStash::Event.new("host" => "myHost", "message" => "Hello world") }
