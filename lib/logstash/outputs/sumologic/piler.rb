@@ -1,76 +1,62 @@
 # encoding: utf-8
 
+require_relative './common'
+require_relative './statistics'
+require_relative './message_queue'
+
 module LogStash; module Outputs; class SumoLogic;
   class Piler
 
     include LogStash::Outputs::SumoLogic::Common
 
-    attr_reader :is_running
     attr_reader :is_pile
 
     TEAR_DOWN_TIMEOUT = 10
 
-    def initialize(interval, pile_max, queue_max, stats)
-      @interval = interval
-      @pile_max = pile_max
-      @queue_max = queue_max
+    def initialize(config, stats, queue)
+      
+      @interval = config['interval']
+      @pile_max = config['pile_max']
       @stats = stats
+      @queue = queue
 
-      @pile = Array.new
-      @pile_size = 0
-      @semaphore = Mutex.new
-      @queue = SizedQueue.new(@queue_max)
-      @is_running = false
       @is_pile = (@interval > 0 && @pile_max > 0)
+
+      if (@is_pile)
+        @pile = Array.new
+        @pile_size = 0
+        @semaphore = Mutex.new
+        @stopping = Concurrent::AtomicBoolean.new(false)
+      end
+
     end # def initialize
 
     def start()
-      if (@is_running)
-        log_warn "start when piler is running, ignore"
-      else
-        @is_running = true
-        if (@is_pile)
-          Thread.new { 
-            while @is_running
-              enq_and_clear()
-              Stud.stoppable_sleep(@interval) { !@is_running }
-            end # while
-          }
-        end # if
+      if (@is_pile)
+        @piler_t = Thread.new { 
+          while !@stopping
+            Stud.stoppable_sleep(@interval) { @stopping }
+            log_dbg "timeout, enqueue pile now"
+            enq_and_clear()
+          end # while
+        }
       end # if
     end # def start
 
-    def stop(timeout = TEAR_DOWN_TIMEOUT, no_warn = false)
+    def stop()
       log_info "piler is shutting down..."
-      if (!@is_running && !no_warn)
-        log_warn "stop when piler is not running, ignore"
-      else
-        @is_running = false
-        if (@is_pile)
-          teardown_t = Thread.new {
-            sleep timeout
-            while(!@queue.empty?)
-              if (no_warn)
-                @queue.deq()
-              else
-                log_warn("drop message (teardown)", "message" => @queue.deq())
-              end
-            end
-          }
-          enq_and_clear()
-          teardown_t.join
-        end # if
-      end # if
+      @stopping = true
+      @piler_t.join
       log_info "piler is fully shut down"
     end # def stop
 
     def input(entry)
-      if (!@is_running)
-        log_warn "piler is not running, message ignored", "message" => entry
+      if (@stopping)
+        log_warn "piler is shutting down, message ignored", "message" => entry
       elsif (@is_pile)
         @semaphore.synchronize {
           if @pile_size + entry.bytesize > @pile_max
-            enq(@pile.join($/))
+            @queue.enq(@pile.join($/))
             @pile.clear
             @pile_size = 0
             @stats.record_clear_pile()
@@ -80,37 +66,16 @@ module LogStash; module Outputs; class SumoLogic;
           @stats.record_input(entry)
         }
       else
-        enq(entry)
+        @queue.enq(entry)
       end # if
     end # def input
-
-    def enq(payload)
-      if (payload.bytesize > 0)
-        @queue << payload
-        @stats.record_enque(payload)
-      end
-    end # def enque
-
-    def deq()
-      payload = @queue.deq()
-      @stats.record_deque(payload)
-      payload
-    end # def deq
-
-    def drain()
-      @queue.size.times.map {
-        payload = @queue.deq()
-        @stats.record_deque(payload)
-        payload
-      }
-    end # def drain
 
     private
     def enq_and_clear()
       if (@pile.size > 0)
         @semaphore.synchronize {
           if (@pile.size > 0)
-            enq(@pile.join($/))
+            @queue.enq(@pile.join($/))
             @pile.clear
             @pile_size = 0
             @stats.record_clear_pile()

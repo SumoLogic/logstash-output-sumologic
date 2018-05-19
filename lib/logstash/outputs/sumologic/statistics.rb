@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+require_relative './common'
+
 module LogStash; module Outputs; class SumoLogic;
   class Statistics
 

@@ -1,6 +1,4 @@
 # encoding: utf-8
-require "logstash/outputs/sumologic/common"
-require "logstash/outputs/sumologic/statistics"
 require "logstash/outputs/sumologic/message_queue"
 
 describe LogStash::Outputs::SumoLogic::MessageQueue do

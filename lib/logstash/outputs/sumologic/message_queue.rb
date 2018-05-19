@@ -1,5 +1,8 @@
 # encoding: utf-8
 
+require_relative './common'
+require_relative './statistics'
+
 module LogStash; module Outputs; class SumoLogic;
   class MessageQueue
 
