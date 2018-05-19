@@ -5,8 +5,8 @@ require_relative './statistics'
 module LogStash; module Outputs; class SumoLogic;
   class MessageQueue
 
-    def initialize(size, stats)
-      @queue = SizedQueue::new(size)
+    def initialize(stats, config)
+      @queue = SizedQueue::new(config['queue_max'])
       @stats = stats
     end
 

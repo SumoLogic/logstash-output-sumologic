@@ -8,7 +8,7 @@ describe LogStash::Outputs::SumoLogic::MessageQueue do
     let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
 
     it "enq() correctly" do
-      queue = LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats)
+      queue = LogStash::Outputs::SumoLogic::MessageQueue.new(stats, "queue_max" => 10)
       10.times { |i|
         queue.enq("test - #{i}")
         expect(queue.size()).to eq(i + 1)
@@ -17,7 +17,7 @@ describe LogStash::Outputs::SumoLogic::MessageQueue do
     end
 
     it "deq() correctly" do
-      queue = LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats)
+      queue = LogStash::Outputs::SumoLogic::MessageQueue.new(stats, "queue_max" => 10)
       10.times { |i|
         queue.enq("test - #{i}")
       }
@@ -30,7 +30,7 @@ describe LogStash::Outputs::SumoLogic::MessageQueue do
     end
 
     it "drain() correctly" do
-      queue = LogStash::Outputs::SumoLogic::MessageQueue.new(10, stats)
+      queue = LogStash::Outputs::SumoLogic::MessageQueue.new(stats, "queue_max" => 10)
       10.times { |i|
         queue.enq("test - #{i}")
       }

@@ -50,11 +50,6 @@ module LogStash; module Outputs; class SumoLogic;
       append_content_header(headers)
       append_compress_header(headers)
 
-      log_dbg(
-        "HTTP headers built out",
-        headers
-      )
-
       headers
     end # def build
 

@@ -42,12 +42,10 @@ module LogStash; module Outputs; class SumoLogic;
     private
 
     def build_log_payload(event)
-      log_dbg("build log payload from event", :event => event.to_hash)
       apply_template(@format, event)
     end # def event2log
   
     def build_metrics_payload(event)
-      log_dbg("build metrics payload from event", :event => event.to_hash)
       timestamp = event.get(TIMESTAMP_FIELD).to_i
       source = if @fields_as_metrics
         event_as_metrics(event)
