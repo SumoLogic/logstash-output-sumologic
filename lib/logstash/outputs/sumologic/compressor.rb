@@ -9,9 +9,9 @@ module LogStash; module Outputs; class SumoLogic;
 
     include LogStash::Outputs::SumoLogic::Common
 
-    def initialize(compress, compress_encoding)
-      @compress = compress
-      @compress_encoding = compress_encoding
+    def initialize(config)
+      @compress = config['compress']
+      @compress_encoding = config['compress_encoding']
     end # def initialize
 
     def compress_content(content)
