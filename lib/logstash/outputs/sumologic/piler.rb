@@ -43,7 +43,7 @@ module LogStash; module Outputs; class SumoLogic;
     def stop()
       @stopping.make_true()
       if (@is_pile)
-        log_info "piler is shutting down..."
+        log_info "shutting down piler..."
         @piler_t.join
         log_info "piler is fully shutted down"
       end

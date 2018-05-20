@@ -42,7 +42,7 @@ class TestServer
     @thread.join()
   end # def stop
 
-  def all_requests()
+  def drain()
     @requests.size.times.map { @requests.deq() }
   end
 

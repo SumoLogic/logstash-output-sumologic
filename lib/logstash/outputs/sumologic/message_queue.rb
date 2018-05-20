@@ -6,7 +6,8 @@ module LogStash; module Outputs; class SumoLogic;
   class MessageQueue
 
     def initialize(stats, config)
-      @queue = SizedQueue::new(config['queue_max'])
+      @queue_max = config['queue_max'] < 1 ? 1 : config['queue_max']
+      @queue = SizedQueue::new(@queue_max)
       @stats = stats
     end
 

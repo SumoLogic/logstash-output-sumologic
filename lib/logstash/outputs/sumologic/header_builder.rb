@@ -32,7 +32,7 @@ module LogStash; module Outputs; class SumoLogic;
       @source_name = config['source_name']
       @metrics = config['metrics']
       @fields_as_metrics = config['fields_as_metrics']
-      @metrics_format = config['metrics_format']
+      @metrics_format = (config['metrics_format'] ||= CARBON2).downcase
       @compress = config['compress']
       @compress_encoding = config['compress_encoding']
 

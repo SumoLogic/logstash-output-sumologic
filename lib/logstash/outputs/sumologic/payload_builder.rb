@@ -22,7 +22,7 @@ module LogStash; module Outputs; class SumoLogic;
       @metrics = config['metrics']
       @metrics_name = config['metrics_name']
       @fields_as_metrics = config['fields_as_metrics']
-      @metrics_format = config['metrics_format']
+      @metrics_format = (config['metrics_format'] ||= CARBON2).downcase
       @intrinsic_tags = config['intrinsic_tags'] ||= {}
       @meta_tags = config['meta_tags'] ||= {}
       @fields_include = config['fields_include'] ||= []

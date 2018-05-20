@@ -11,7 +11,6 @@ module LogStash; module Outputs; class SumoLogic;
     CARBON2 = "carbon2"
     DEFLATE = "deflate"
     GZIP = "gzip"
-    SLEEP_BEFORE_REQUE = 5
     LOG_TO_CONSOLE = true
 
     def log_info(message, *opts)

@@ -11,7 +11,7 @@ module LogStash; module Outputs; class SumoLogic;
 
     def initialize(config)
       @compress = config['compress']
-      @compress_encoding = config['compress_encoding']
+      @compress_encoding = (config['compress_encoding'] ||= DEFLATE).downcase
     end # def initialize
 
     def compress_content(content)
