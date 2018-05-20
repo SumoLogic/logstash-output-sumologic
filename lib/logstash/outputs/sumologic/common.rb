@@ -1,5 +1,5 @@
 # encoding: utf-8
-require 'date'
+require "date"
 
 module LogStash; module Outputs; class SumoLogic;
   module Common

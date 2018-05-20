@@ -1,5 +1,5 @@
 # encoding: utf-8
-require 'socket'
+require "socket"
 
 class TestServer
 
@@ -22,10 +22,10 @@ class TestServer
   def initialize(response = RESPONSE_200)
     @requests = Queue.new()
     @response = response
+    @server = TCPServer.new PORT
   end # def initialize
 
   def start()
-    @server = TCPServer.new PORT
     @thread = Thread.new { 
       while session = @server.accept
         request = session.gets

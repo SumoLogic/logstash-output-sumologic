@@ -1,66 +1,79 @@
 # encoding: utf-8
 require "net/https"
 require "socket"
-require "stringio"
-require 'thread'
+require "thread"
 require "uri"
-require "zlib"
+require_relative "./common"
+require_relative "./compressor"
+require_relative "./header_builder"
+require_relative "./statistics"
+require_relative "./message_queue"
 
 module LogStash; module Outputs; class SumoLogic;
-  module Sender
+  class Sender
 
     include LogStash::Outputs::SumoLogic::Common
 
-    @@sender_running = false
+    def initialize(client, queue, stats, config)
+      @client = client
+      @queue = queue
+      @stats = stats
 
-    def start_sender()
-      @@sender_running = true
-      @@request_tokens = SizedQueue.new(@sender_max)
-      @sender_max.times { |t| @@request_tokens << t }
-      @@headers = build_header()
+      @url = config["url"]
+      @sender_max = (config["sender_max"] ||= 1) < 1 ? 1 : config["sender_max"]
+      @sleep_before_requeue = config["sleep_before_requeue"] ||= 30
 
-      @@sender_t = Thread.new {
-        while @@sender_running
-          content = @piler.deq()
+      @tokens = SizedQueue.new(@sender_max)
+      @sender_max.times { |t| @tokens << t }
+
+      @headers = LogStash::Outputs::SumoLogic::HeaderBuilder.new(config).build()
+      @compressor = LogStash::Outputs::SumoLogic::Compressor.new(config)
+
+    end # def initialize
+
+    def start()
+      @stopping = Concurrent::AtomicBoolean.new(false)
+
+      @sender_t = Thread.new {
+        while @stopping.false?
+          content = @queue.deq()
           send_request(content)
         end # while
-        log_info "draining messages in pile..."
-        @piler.drain().map { |content| 
+        @queue.drain().map { |content| 
           send_request(content)
         }
-        log_info "waiting message sent out..."
-        while @@request_tokens.size < @sender_max
+        log_info "waiting messages sent out..."
+        while @tokens.size < @sender_max
           sleep 1
         end # while
       }
     end # def start_sender
 
-    def stop_sender()
-      log_info "sender is shutting down..."
-      @@sender_running = false
-      @piler.enq("PLUGIN STOPPED")
-      @@sender_t.join
-      client.close()
-      log_info "sender is fully shut down"
+    def stop()
+      log_info "shutting down sender..."
+      @stopping.make_true()
+      @queue.enq("PLUGIN STOPPED")
+      @sender_t.join
+      log_info "sender is fully shutted down"
     end # def stop_sender
     
-    def connect(use_ssl = true)
+    def connect()
       uri = URI.parse(@url)
       http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = use_ssl
+      http.use_ssl = @url.downcase().start_with?("https")
       request = Net::HTTP::Get.new(uri.request_uri)
       begin
         res = http.request(request)
         if res.code.to_i != 200
           log_err(
-            "Server did not accept request",
+            "Server rejected the request",
             :url => @url,
             :code => res.code
           )
           false
         else
           log_dbg(
-            "Server ping success",
+            "Server accepted the request",
             :url => @url
           )
           true
@@ -75,14 +88,16 @@ module LogStash; module Outputs; class SumoLogic;
       end
     end # def connect
     
+    private
+
     def send_request(content)
-      token = @@request_tokens.pop()
-      body = compress_content(content)
+      token = @tokens.pop()
+      body = @compressor.compress(content)
   
-      request = client.send(:background).send(:post, @url, :body => body, :headers => @@headers)
+      request = @client.send(:background).send(:post, @url, :body => body, :headers => @headers)
       
       request.on_complete do
-        @@request_tokens << token
+        @tokens << token
       end
   
       request.on_success do |response|
@@ -92,12 +107,9 @@ module LogStash; module Outputs; class SumoLogic;
             "HTTP request rejected",
             :token => token,
             :code => response.code)
-          sleep SLEEP_BEFORE_REQUE
-          log_dbg(
-            "requeue message",
-            :token => token,
-            :message => content)
-          @piler.enq(content)
+          if response.code == 429 || response.code == 503 || response.code == 504
+            requeue_message(content)
+          end
         else
           log_dbg(
             "HTTP request accepted",
@@ -115,40 +127,23 @@ module LogStash; module Outputs; class SumoLogic;
           :class => exception.class.name,
           :backtrace => exception.backtrace
         )
-        sleep SLEEP_BEFORE_REQUE
-        log_dbg(
-          "requeue message",
-          :token => token,
-          :message => content)
-        @piler.enq(content)
+        requeue_message(content)
       end      
 
       @stats.record_request(content.bytesize, body.bytesize)
       request.call
     end # def send_request
 
-    # private
-    def compress_content(content)
-      if @compress
-        if @compress_encoding == GZIP
-          result = gzip(content)
-          result.bytes.to_a.pack('c*')
-        else
-          Zlib::Deflate.deflate(content)
-        end
-      else
-        content
+    def requeue_message(content)
+      if @stopping.false?
+        log_warn(
+          "requeue message",
+          :after => @sleep_before_requeue,
+          :size => content.bytesize)
+        Stud.stoppable_sleep(@sleep_before_requeue) { @stopping.true? }
+        @queue.enq(content)
       end
-    end # def compress
-    
-    def gzip(content)
-      stream = StringIO.new("w")
-      stream.set_encoding("ASCII")
-      gz = Zlib::GzipWriter.new(stream)
-      gz.write(content)
-      gz.close
-      stream.string.bytes.to_a.pack('c*')
-    end # def gzip
-  
+    end # def reque_message
+
   end
 end; end; end

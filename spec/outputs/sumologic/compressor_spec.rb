@@ -8,8 +8,8 @@ describe LogStash::Outputs::SumoLogic::Compressor do
       LogStash::Outputs::SumoLogic::Compressor.new("compress" => true, "compress_encoding" => "deflate")
     }
     specify {
-      expect(compressor.compress_content("abcde").bytesize).to eq(13)
-      expect(compressor.compress_content("aaaaa").bytesize).to eq(11)
+      expect(compressor.compress("abcde").bytesize).to eq(13)
+      expect(compressor.compress("aaaaa").bytesize).to eq(11)
     }
   end # context
   
@@ -18,8 +18,8 @@ describe LogStash::Outputs::SumoLogic::Compressor do
       LogStash::Outputs::SumoLogic::Compressor.new("compress" => true, "compress_encoding" => "gzip")
     }
     specify {
-      expect(compressor.compress_content("abcde").bytesize).to eq(25)
-      expect(compressor.compress_content("aaaaa").bytesize).to eq(23)
+      expect(compressor.compress("abcde").bytesize).to eq(25)
+      expect(compressor.compress("aaaaa").bytesize).to eq(23)
     }
   end # context
 

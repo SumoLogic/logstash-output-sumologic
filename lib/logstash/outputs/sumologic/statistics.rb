@@ -1,5 +1,5 @@
 # encoding: utf-8
-require_relative './common'
+require_relative "./common"
 
 module LogStash; module Outputs; class SumoLogic;
   class Statistics
@@ -85,8 +85,8 @@ module LogStash; module Outputs; class SumoLogic;
 
     def record_response_failure()
       @semaphore.synchronize {
-        now = @total_response['failure']
-        @total_response['failure'] = now + 1
+        now = @total_response["failure"]
+        @total_response["failure"] = now + 1
       }
     end # def record_response_failure
 

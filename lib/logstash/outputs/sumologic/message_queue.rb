@@ -1,12 +1,12 @@
 # encoding: utf-8
-require_relative './common'
-require_relative './statistics'
+require_relative "./common"
+require_relative "./statistics"
 
 module LogStash; module Outputs; class SumoLogic;
   class MessageQueue
 
     def initialize(stats, config)
-      @queue_max = config['queue_max'] < 1 ? 1 : config['queue_max']
+      @queue_max = (config["queue_max"] ||= 1) < 1 ? 1 : config["queue_max"]
       @queue = SizedQueue::new(@queue_max)
       @stats = stats
     end

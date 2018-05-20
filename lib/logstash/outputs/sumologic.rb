@@ -12,19 +12,18 @@ require "logstash/plugin_mixins/http_client"
 #
 class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   declare_threadsafe!
-
-  require "logstash/outputs/sumologic/common"
-  require "logstash/outputs/sumologic/statistics"
-  require "logstash/outputs/sumologic/payload_builder"
-  require "logstash/outputs/sumologic/header_builder"
-  require "logstash/outputs/sumologic/piler"
-  require "logstash/outputs/sumologic/sender"
+  
+  require_relative "sumologic/common"
+  require_relative "sumologic/compressor"
+  require_relative "sumologic/header_builder"
+  require_relative "sumologic/message_queue"
+  require_relative "sumologic/payload_builder"
+  require_relative "sumologic/piler"
+  require_relative "sumologic/sender"
+  require_relative "sumologic/statistics"
   
   include LogStash::PluginMixins::HttpClient
   include LogStash::Outputs::SumoLogic::Common
-  include LogStash::Outputs::SumoLogic::PayloadBuilder
-  include LogStash::Outputs::SumoLogic::HeaderBuilder
-  include LogStash::Outputs::SumoLogic::Sender
 
   config_name "sumologic"
 
@@ -64,7 +63,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
   # The formatter of log message, by default is message with timestamp and host as prefix
   # Use %{@json} tag to send whole event
-  config :format, :validate => :string, :default => "%{@timestamp} %{host} %{message}"
+  config :format, :validate => :string, :default => DEFAULT_LOG_FORMAT
 
   # Override the structure of @json tag with the given key value pairs
   config :json_mapping, :validate => :hash
@@ -85,7 +84,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # Defines the format of the metric, support "graphite" or "carbon2"
   config :metrics_format, :validate => :string, :default => CARBON2
 
-  # Define the metric name looking, the placeholder '*' will be replaced with the actual metric name
+  # Define the metric name looking, the placeholder "*" will be replaced with the actual metric name
   # For example:
   #     metrics => { "uptime.1m" => "%{uptime_1m}" }
   #     metrics_name => "mynamespace.*"
@@ -100,34 +99,41 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # For carbon2 metrics format only, define the meta tags (which will NOT be used to identify the metrics)
   config :meta_tags, :validate => :hash, :default => {}
   
+  # For message fail to send or get 429/503/504 response, try to resend after (x) seconds
+  config :sleep_before_requeue, :validate => :number, :default => 30
+
   attr_reader :stats
   
-  public
   def register
-
-    @queue_max = 10 if @queue_max < 10
-    @sender_max = 1 if @sender_max < 1
-    @format = "%{@json}" if @format.nil? || @format.empty?
-    @compress_encoding = @compress_encoding.downcase
-    @metrics_format = @metrics_format.downcase
-
-    connect()
     @stats = Statistics.new()
-    @piler = Piler.new(@interval, @pile_max, @queue_max, @stats)
-    @piler.start()
-    start_sender()
-
+    @queue = MessageQueue.new(@stats, config)
+    @builder = PayloadBuilder.new(config)
+    @piler = Piler.new(@queue, @stats, config)
+    @sender = Sender.new(client, @queue, @stats, config)
+    if @sender.connect()
+      @sender.start()
+      @piler.start()
+    else
+      throw "connection failed, please check the url and retry"
+    end
   end # def register
 
-  public
   def multi_receive(events)
-    events.each { |event| receive(event) }
+    begin
+      content = events.map { |event| @builder.build(event) }.join($/)
+      @piler.input(content)
+    rescue Exception => ex
+      log_err(
+        "Error when processing events",
+        :events => events,
+        :exception => ex
+      )
+    end
   end # def multi_receive
   
-  public
   def receive(event)
     begin
-      content = build_payload(event)
+      content = @builder.build(event)
       @piler.input(content)
     rescue Exception => ex
       log_err(
@@ -138,10 +144,10 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     end
   end # def receive
 
-  public
   def close
     @piler.stop()
-    stop_sender()
+    @sender.stop()
+    client.close()
   end # def close
 
 <<<<<<< HEAD

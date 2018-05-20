@@ -1,7 +1,7 @@
 # encoding: utf-8
-require_relative './common'
-require_relative './statistics'
-require_relative './message_queue'
+require_relative "./common"
+require_relative "./statistics"
+require_relative "./message_queue"
 
 module LogStash; module Outputs; class SumoLogic;
   class Piler
@@ -12,8 +12,8 @@ module LogStash; module Outputs; class SumoLogic;
 
     def initialize(queue, stats, config)
       
-      @interval = config['interval']
-      @pile_max = config['pile_max']
+      @interval = config["interval"] ||= 0
+      @pile_max = config["pile_max"] ||= 0
       @queue = queue
       @stats = stats
 

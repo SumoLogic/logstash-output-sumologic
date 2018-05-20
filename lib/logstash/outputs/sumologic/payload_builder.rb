@@ -2,7 +2,7 @@
 require "logstash/json"
 require "logstash/event"
 
-require_relative './common'
+require_relative "./common"
 
 module LogStash; module Outputs; class SumoLogic;
   class PayloadBuilder
@@ -16,17 +16,17 @@ module LogStash; module Outputs; class SumoLogic;
     
     def initialize(config)
       
-      @format = config['format'] ||= DEFAULT_LOG_FORMAT
-      @json_mapping = config['json_mapping']
+      @format = config["format"] ||= DEFAULT_LOG_FORMAT
+      @json_mapping = config["json_mapping"]
 
-      @metrics = config['metrics']
-      @metrics_name = config['metrics_name']
-      @fields_as_metrics = config['fields_as_metrics']
-      @metrics_format = (config['metrics_format'] ||= CARBON2).downcase
-      @intrinsic_tags = config['intrinsic_tags'] ||= {}
-      @meta_tags = config['meta_tags'] ||= {}
-      @fields_include = config['fields_include'] ||= []
-      @fields_exclude = config['fields_exclude'] ||= []
+      @metrics = config["metrics"]
+      @metrics_name = config["metrics_name"]
+      @fields_as_metrics = config["fields_as_metrics"]
+      @metrics_format = (config["metrics_format"] ||= CARBON2).downcase
+      @intrinsic_tags = config["intrinsic_tags"] ||= {}
+      @meta_tags = config["meta_tags"] ||= {}
+      @fields_include = config["fields_include"] ||= []
+      @fields_exclude = config["fields_exclude"] ||= []
 
     end # def initialize
 
