@@ -1,5 +1,5 @@
 # encoding: utf-8
-require_relative "./common"
+require "logstash/outputs/sumologic/common"
 
 module LogStash; module Outputs; class SumoLogic;
   class Statistics

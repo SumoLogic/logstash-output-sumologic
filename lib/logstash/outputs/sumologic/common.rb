@@ -11,13 +11,13 @@ module LogStash; module Outputs; class SumoLogic;
     CARBON2 = "carbon2"
     DEFLATE = "deflate"
     GZIP = "gzip"
-    LOG_TO_CONSOLE = true
+    LOG_TO_CONSOLE = false
 
     def log_info(message, *opts)
       if LOG_TO_CONSOLE
         puts "[INFO:#{DateTime::now}]#{message} #{opts.to_s}"
       else
-        @logger.info(message, opts)
+        @logger && @logger.info(message, opts)
       end
     end # def log_info
 
@@ -25,7 +25,7 @@ module LogStash; module Outputs; class SumoLogic;
       if LOG_TO_CONSOLE
         puts "\e[33m[WARN:#{DateTime::now}]#{message} #{opts.to_s}\e[0m"
       else
-        @logger.warn(message, opts)
+        @logger && @logger.warn(message, opts)
       end
     end # def log_warn
 
@@ -33,7 +33,7 @@ module LogStash; module Outputs; class SumoLogic;
       if LOG_TO_CONSOLE
         puts "\e[31m[ERR :#{DateTime::now}]#{message} #{opts.to_s}\e[0m"
       else
-        @logger.error(message, opts)
+        @logger && @logger.error(message, opts)
       end
     end # def log_err
 
@@ -41,7 +41,7 @@ module LogStash; module Outputs; class SumoLogic;
       if LOG_TO_CONSOLE
         puts "\e[36m[DBG :#{DateTime::now}]#{message} #{opts.to_s}\e[0m"
       else
-        @logger.debug(message, opts)
+        @logger && @logger.debug(message, opts)
       end
     end # def log_dbg
 

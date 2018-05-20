@@ -1,4 +1,5 @@
 # encoding: utf-8
+require "logstash/event"
 require "logstash/json"
 require "logstash/namespace"
 require "logstash/outputs/base"
@@ -13,14 +14,14 @@ require "logstash/plugin_mixins/http_client"
 class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   declare_threadsafe!
   
-  require_relative "sumologic/common"
-  require_relative "sumologic/compressor"
-  require_relative "sumologic/header_builder"
-  require_relative "sumologic/message_queue"
-  require_relative "sumologic/payload_builder"
-  require_relative "sumologic/piler"
-  require_relative "sumologic/sender"
-  require_relative "sumologic/statistics"
+  require "logstash/outputs/sumologic/common"
+  require "logstash/outputs/sumologic/compressor"
+  require "logstash/outputs/sumologic/header_builder"
+  require "logstash/outputs/sumologic/message_queue"
+  require "logstash/outputs/sumologic/payload_builder"
+  require "logstash/outputs/sumologic/piler"
+  require "logstash/outputs/sumologic/sender"
+  require "logstash/outputs/sumologic/statistics"
   
   include LogStash::PluginMixins::HttpClient
   include LogStash::Outputs::SumoLogic::Common
@@ -119,15 +120,18 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def register
 
   def multi_receive(events)
+    # events.map { |e| receive(e) }
     begin
-      content = events.map { |event| @builder.build(event) }.join($/)
-      @piler.input(content)
-    rescue Exception => ex
+      content = Array(events).map { |event| @builder.build(event) }.join($/)
+      @queue.enq(content)
+    rescue Exception => exception
       log_err(
         "Error when processing events",
         :events => events,
-        :exception => ex
-      )
+        :message => exception.message,
+        :class => exception.class.name,
+        :backtrace => exception.backtrace
+    )
     end
   end # def multi_receive
   
@@ -135,12 +139,14 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     begin
       content = @builder.build(event)
       @piler.input(content)
-    rescue Exception => ex
+    rescue Exception => exception
       log_err(
         "Error when processing event",
         :event => event,
-        :exception => ex
-      )
+        :message => exception.message,
+        :class => exception.class.name,
+        :backtrace => exception.backtrace
+    )
     end
   end # def receive
 

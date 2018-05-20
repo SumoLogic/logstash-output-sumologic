@@ -1,7 +1,7 @@
 # encoding: utf-8
 require "logstash/devutils/rspec/spec_helper"
-require "logstash/outputs/sumologic"
 require "rspec/eventually"
+require "logstash/outputs/sumologic"
 
 require_relative "../../test_server.rb"
 
@@ -179,7 +179,7 @@ describe LogStash::Outputs::SumoLogic::Sender do
       plugin.register
       30.times { plugin.receive(event) }
       plugin.close
-      expect(plugin.stats.total_response[200]).to eq 31
+      expect(plugin.stats.total_response[200]).to eq 30
     end
 
   end # context

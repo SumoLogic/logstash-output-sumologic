@@ -2,7 +2,7 @@
 require "logstash/json"
 require "logstash/event"
 
-require_relative "./common"
+require "logstash/outputs/sumologic/common"
 
 module LogStash; module Outputs; class SumoLogic;
   class PayloadBuilder

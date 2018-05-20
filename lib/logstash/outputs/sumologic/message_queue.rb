@@ -1,6 +1,6 @@
 # encoding: utf-8
-require_relative "./common"
-require_relative "./statistics"
+require "logstash/outputs/sumologic/common"
+require "logstash/outputs/sumologic/statistics"
 
 module LogStash; module Outputs; class SumoLogic;
   class MessageQueue

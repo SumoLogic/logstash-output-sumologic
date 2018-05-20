@@ -1,5 +1,6 @@
 # encoding: utf-8
-require "logstash/outputs/sumologic/message_queue"
+require "logstash/devutils/rspec/spec_helper"
+require "logstash/outputs/sumologic"
 
 describe LogStash::Outputs::SumoLogic::MessageQueue do
   

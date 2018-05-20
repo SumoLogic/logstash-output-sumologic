@@ -1,5 +1,6 @@
 # encoding: utf-8
-require "logstash/outputs/sumologic/header_builder"
+require "logstash/devutils/rspec/spec_helper"
+require "logstash/outputs/sumologic"
 
 describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 

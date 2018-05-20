@@ -3,16 +3,17 @@ require "net/https"
 require "socket"
 require "thread"
 require "uri"
-require_relative "./common"
-require_relative "./compressor"
-require_relative "./header_builder"
-require_relative "./statistics"
-require_relative "./message_queue"
+require "logstash/outputs/sumologic/common"
+require "logstash/outputs/sumologic/compressor"
+require "logstash/outputs/sumologic/header_builder"
+require "logstash/outputs/sumologic/statistics"
+require "logstash/outputs/sumologic/message_queue"
 
 module LogStash; module Outputs; class SumoLogic;
   class Sender
 
     include LogStash::Outputs::SumoLogic::Common
+    STOP_TAG = "PLUGIN STOPPED"
 
     def initialize(client, queue, stats, config)
       @client = client
@@ -52,7 +53,7 @@ module LogStash; module Outputs; class SumoLogic;
     def stop()
       log_info "shutting down sender..."
       @stopping.make_true()
-      @queue.enq("PLUGIN STOPPED")
+      @queue.enq(STOP_TAG)
       @sender_t.join
       log_info "sender is fully shutted down"
     end # def stop_sender
@@ -91,6 +92,11 @@ module LogStash; module Outputs; class SumoLogic;
     private
 
     def send_request(content)
+      if content == STOP_TAG
+        log_dbg "STOP_TAG is received."
+        return
+      end
+      
       token = @tokens.pop()
       body = @compressor.compress(content)
   
@@ -106,7 +112,9 @@ module LogStash; module Outputs; class SumoLogic;
           log_err(
             "HTTP request rejected",
             :token => token,
-            :code => response.code)
+            :code => response.code,
+            :contet => content
+          )
           if response.code == 429 || response.code == 503 || response.code == 504
             requeue_message(content)
           end
