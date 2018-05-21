@@ -20,75 +20,85 @@ module LogStash; module Outputs; class SumoLogic;
     attr_reader :total_request
     attr_reader :total_request_bytes
     attr_reader :total_request_bytes_compressed 
-    attr_reader :total_response
+    attr_reader :total_payload_bytes
+    attr_reader :total_payload_bytes_compressed
 
     def initialize()
       @initialize_time = Time.now()
-      @total_input_times = 0
-      @total_input_bytes = 0
-      @current_pile_items = 0
-      @current_pile_bytes = 0
-      @total_enque_times = 0
-      @total_enque_bytes = 0
-      @total_deque_times = 0
-      @total_deque_bytes = 0
-      @current_queue_items = 0
-      @current_queue_bytes = 0
-      @total_request = 0
-      @total_request_bytes = 0
-      @total_request_bytes_compressed = 0
-      @total_response = Hash.new(0)
-      @semaphore = Mutex.new
+      @total_input_times = Concurrent::AtomicFixnum.new
+      @total_input_bytes = Concurrent::AtomicFixnum.new
+      @current_pile_items = Concurrent::AtomicFixnum.new
+      @current_pile_bytes = Concurrent::AtomicFixnum.new
+      @total_enque_times = Concurrent::AtomicFixnum.new
+      @total_enque_bytes = Concurrent::AtomicFixnum.new
+      @total_deque_times = Concurrent::AtomicFixnum.new
+      @total_deque_bytes = Concurrent::AtomicFixnum.new
+      @current_queue_items = Concurrent::AtomicFixnum.new
+      @current_queue_bytes = Concurrent::AtomicFixnum.new
+      @total_request = Concurrent::AtomicFixnum.new
+      @total_request_bytes = Concurrent::AtomicFixnum.new
+      @total_request_bytes_compressed = Concurrent::AtomicFixnum.new
+      @total_response = Concurrent::Map.new
+      @total_payload_bytes = Concurrent::AtomicFixnum.new
+      @total_payload_bytes_compressed = Concurrent::AtomicFixnum.new
+  
     end # def initialize
 
+    def total_response(key)
+      @total_response.get(key) ? @total_response.get(key).value : 0
+    end
+
     def record_input(entry)
-      @total_input_times += 1
-      @total_input_bytes += entry.bytesize
-      @current_pile_items += 1
-      @current_pile_bytes += entry.bytesize
+      @total_input_times.increment()
+      @total_input_bytes.update { |v| v + entry.bytesize }
+      @current_pile_items.increment()
+      @current_pile_bytes.update { |v| v + entry.bytesize }
     end # def record_input
 
     def record_clear_pile()
-      @current_pile_items = 0
-      @current_pile_bytes = 0
+      @current_pile_items.value= 0
+      @current_pile_bytes.value= 0
     end # def record_pile_clear
 
     def record_enque(payload)
-      @total_enque_times += 1
-      @total_enque_bytes += payload.bytesize
-      @current_queue_items += 1
-      @current_queue_bytes += payload.bytesize
+      @total_enque_times.increment()
+      @total_enque_bytes.update { |v| v + payload.bytesize }
+      @current_queue_items.increment()
+      @current_queue_bytes.update { |v| v + payload.bytesize }
     end # def record_enque
 
     def record_deque(payload)
-      @total_deque_times += 1
-      @total_deque_bytes += payload.bytesize
-      @current_queue_items -= 1
-      @current_queue_bytes -= payload.bytesize
+      @total_deque_times.increment()
+      @total_deque_bytes.update { |v| v + payload.bytesize }
+      @current_queue_items.decrement()
+      @current_queue_bytes.update { |v| v - payload.bytesize }
     end # def record_deque
 
-    @total_payload_bytes = 0
-    @total_payload_bytes_compressed = 0
-
     def record_request(size, size_compressed)
-      @total_request += 1
-      @total_request_bytes += size
-      @total_request_bytes_compressed += size_compressed
+      @total_request.increment()
+      @total_request_bytes.update { |v| v + size }
+      @total_request_bytes_compressed.update { |v| v + size_compressed }
     end # def record_request
 
     def record_response_success(code)
-      @semaphore.synchronize {
-        now = @total_response[code]
-        @total_response[code] = now + 1
-      }
+      atomic_map_increase(@total_response, code.to_s)
     end # def record_response_success
 
     def record_response_failure()
-      @semaphore.synchronize {
-        now = @total_response["failure"]
-        @total_response["failure"] = now + 1
-      }
+      atomic_map_increase(@total_response, "failure")
     end # def record_response_failure
+
+    def atomic_map_increase(map, key)
+      number = map.get(key)
+      if number.nil?
+        newNumber = Concurrent::AtomicFixnum.new
+        number = map.put_if_absent(key, newNumber)
+        if number.nil?
+          number = newNumber
+        end
+      end
+      number.increment()
+    end # def atomic_map_increase
 
   end
 end; end; end

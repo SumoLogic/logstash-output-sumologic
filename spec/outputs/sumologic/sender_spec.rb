@@ -55,13 +55,13 @@ describe LogStash::Outputs::SumoLogic::Sender do
     it "should send message correctly" do
       plugin.register
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(eq(1)).pause_for(1)
-      expect { plugin.stats.total_response[200] }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq(1)).pause_for(1)
       result = @@server.drain()
       expect(result.size).to eq(2)
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(eq(2)).pause_for(1)
-      expect { plugin.stats.total_response[200] }.to eventually(eq(2)).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(eq(2)).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq(2)).pause_for(1)
       result = @@server.drain()
       expect(result.size).to eq(1)
     end
@@ -69,18 +69,18 @@ describe LogStash::Outputs::SumoLogic::Sender do
     it "should re-enque the message if got 429" do
       plugin.register
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(eq(1)).pause_for(1)
-      expect { plugin.stats.total_response[200] }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq(1)).pause_for(1)
       result = @@server.drain()
       expect(result.size).to eq(2)
       @@server.response = TestServer::RESPONSE_429
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(be > 1).within(10).pause_for(1)
-      expect { plugin.stats.total_response[429] }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_response("429") }.to eventually(be > 1).within(10).pause_for(1)
       result = @@server.drain()
       expect(result.size).to be > 0
       @@server.response = TestServer::RESPONSE_200
-      expect { plugin.stats.total_response[200] }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(be > 1).within(10).pause_for(1)
       result = @@server.drain()
       expect(result.size).to be > 0
     end
@@ -88,18 +88,18 @@ describe LogStash::Outputs::SumoLogic::Sender do
     it "should re-enque the message if network failed" do
       plugin.register
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(eq(1)).pause_for(1)
-      expect { plugin.stats.total_response[200] }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq(1)).pause_for(1)
       result = @@server.drain()
       expect(result.size).to eq(2)
       @@server.stop()
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(be > 1).within(10).pause_for(1)
-      expect { plugin.stats.total_response["failure"] }.to eventually(be > 1).within(25).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_response("failure") }.to eventually(be > 1).within(25).pause_for(1)
       result = @@server.drain()
       @@server.start()
       @@server.response = TestServer::RESPONSE_200
-      expect { plugin.stats.total_response[200] }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(be > 1).within(10).pause_for(1)
       result = @@server.drain()
       expect(result.size).to be > 0
     end
@@ -113,13 +113,13 @@ describe LogStash::Outputs::SumoLogic::Sender do
     it "should send message correctly" do
       plugin.register
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(eq(1)).pause_for(1)
-      expect { plugin.stats.total_response[200] }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq(1)).pause_for(1)
       result = @@server.drain()
       expect(result.size).to eq(2)
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(eq(2)).pause_for(1)
-      expect { plugin.stats.total_response[200] }.to eventually(eq(2)).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(eq(2)).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq(2)).pause_for(1)
       result = @@server.drain()
       expect(result.size).to eq(1)
     end
@@ -127,18 +127,18 @@ describe LogStash::Outputs::SumoLogic::Sender do
     it "should re-enque the message if got 429" do
       plugin.register
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(eq(1)).pause_for(1)
-      expect { plugin.stats.total_response[200] }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq(1)).pause_for(1)
       result = @@server.drain()
       expect(result.size).to eq(2)
       @@server.response = TestServer::RESPONSE_429
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(be > 1).within(10).pause_for(1)
-      expect { plugin.stats.total_response[429] }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_response("429") }.to eventually(be > 1).within(10).pause_for(1)
       result = @@server.drain()
       expect(result.size).to be > 0
       @@server.response = TestServer::RESPONSE_200
-      expect { plugin.stats.total_response[200] }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(be > 1).within(10).pause_for(1)
       result = @@server.drain()
       expect(result.size).to be > 0
     end
@@ -146,18 +146,18 @@ describe LogStash::Outputs::SumoLogic::Sender do
     it "should re-enque the message if network failed" do
       plugin.register
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(eq(1)).pause_for(1)
-      expect { plugin.stats.total_response[200] }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(eq(1)).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq(1)).pause_for(1)
       result = @@server.drain()
       expect(result.size).to eq(2)
       @@server.stop()
       plugin.receive(event)
-      expect { plugin.stats.total_request }.to eventually(be > 1).within(10).pause_for(1)
-      expect { plugin.stats.total_response["failure"] }.to eventually(be > 1).within(25).pause_for(1)
+      expect { plugin.stats.total_request.value }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_response("failure") }.to eventually(be > 1).within(25).pause_for(1)
       result = @@server.drain()
       @@server.start()
       @@server.response = TestServer::RESPONSE_200
-      expect { plugin.stats.total_response[200] }.to eventually(be > 1).within(10).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(be > 1).within(10).pause_for(1)
       result = @@server.drain()
       expect(result.size).to be > 0
     end
@@ -165,7 +165,7 @@ describe LogStash::Outputs::SumoLogic::Sender do
     it "should reuse tokens" do
       plugin.register
       30.times { plugin.receive(event) }
-      expect { plugin.stats.total_response[200] }.to eventually(eq 30).within(100).pause_for(1)
+      expect { plugin.stats.total_response("200") }.to eventually(eq 30).within(100).pause_for(1)
     end
 
   end # context
@@ -179,7 +179,7 @@ describe LogStash::Outputs::SumoLogic::Sender do
       plugin.register
       30.times { plugin.receive(event) }
       plugin.close
-      expect(plugin.stats.total_response[200]).to eq 30
+      expect(plugin.stats.total_response("200")).to eq 30
     end
 
   end # context

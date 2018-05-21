@@ -13,7 +13,7 @@ describe LogStash::Outputs::SumoLogic::MessageQueue do
       10.times { |i|
         queue.enq("test - #{i}")
         expect(queue.size()).to eq(i + 1)
-        expect(stats.total_enque_times).to eq(i + 1)
+        expect(stats.total_enque_times.value).to eq(i + 1)
       }
     end
 
@@ -26,7 +26,7 @@ describe LogStash::Outputs::SumoLogic::MessageQueue do
         expect(queue.size()).to eq(10 - i)
         result = queue.deq()
         expect(result).to eq("test - #{i}")
-        expect(stats.total_deque_times).to eq(i + 1)
+        expect(stats.total_deque_times.value).to eq(i + 1)
       }
     end
 
@@ -37,7 +37,7 @@ describe LogStash::Outputs::SumoLogic::MessageQueue do
       }
       result = queue.drain()
       expect(queue.size()).to eq(0)
-      expect(stats.total_deque_times).to eq(10)
+      expect(stats.total_deque_times.value).to eq(10)
       expect(result.size).to eq(10)
       10.times { |i|
         expect(result[i]).to eq("test - #{i}")

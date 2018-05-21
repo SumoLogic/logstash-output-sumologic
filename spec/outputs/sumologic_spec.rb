@@ -27,8 +27,8 @@ describe LogStash::Outputs::SumoLogic, :unless => (ENV["sumo_url"].to_s.empty?) 
         specify {
           event = LogStash::Event.new("host" => "myHost", "message" => "Hello world")
           plugin.receive(event)
-          expect { plugin.stats.total_request }.to eventually(be > 0).within(10).pause_for(1)
-          expect { plugin.stats.total_response[200] }.to eventually(be > 0).within(10).pause_for(1)
+          expect { plugin.stats.total_request.value }.to eventually(be > 0).within(10).pause_for(1)
+          expect { plugin.stats.total_response("200") }.to eventually(be > 0).within(10).pause_for(1)
         }
       end
 
@@ -60,8 +60,8 @@ describe LogStash::Outputs::SumoLogic, :unless => (ENV["sumo_url"].to_s.empty?) 
             })
           
           plugin.receive(event)
-          expect { plugin.stats.total_request }.to eventually(be > 0).within(10).pause_for(1)
-          expect { plugin.stats.total_response[200] }.to eventually(be > 0).within(10).pause_for(1)
+          expect { plugin.stats.total_request.value }.to eventually(be > 0).within(10).pause_for(1)
+          expect { plugin.stats.total_response("200") }.to eventually(be > 0).within(10).pause_for(1)
         }
       end
     end
@@ -82,8 +82,8 @@ describe LogStash::Outputs::SumoLogic, :unless => (ENV["sumo_url"].to_s.empty?) 
             event = LogStash::Event.new("host" => "myHost", "message" => "Hello world - #{t}")
             plugin.receive(event)
           } 
-          expect { plugin.stats.total_request }.to eventually(be > 0).within(10).pause_for(1)
-          expect { plugin.stats.total_response[200] }.to eventually(be > 0).within(10).pause_for(1)
+          expect { plugin.stats.total_request.value }.to eventually(be > 0).within(10).pause_for(1)
+          expect { plugin.stats.total_response("200") }.to eventually(be > 0).within(10).pause_for(1)
         }
       end
 
@@ -103,8 +103,8 @@ describe LogStash::Outputs::SumoLogic, :unless => (ENV["sumo_url"].to_s.empty?) 
             }
             plugin.multi_receive(events)
           } 
-          expect { plugin.stats.total_request }.to eventually(be > 0).within(10).pause_for(1)
-          expect { plugin.stats.total_response[200] }.to eventually(be > 0).within(10).pause_for(1)
+          expect { plugin.stats.total_request.value }.to eventually(be > 0).within(10).pause_for(1)
+          expect { plugin.stats.total_response("200") }.to eventually(be > 0).within(10).pause_for(1)
         }
       end
 
