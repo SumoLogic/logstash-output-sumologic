@@ -113,6 +113,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   attr_reader :stats
   
   def register
+    set_logger(@logger)
     @stats = Statistics.new()
     @queue = MessageQueue.new(@stats, config)
     @builder = PayloadBuilder.new(@stats, config)
