@@ -61,7 +61,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   config :queue_max, :validate => :number, :default => 4096
 
   # Max # of HTTP senders working in parallel
-  config :sender_max, :validate => :number, :default => 10
+  config :sender_max, :validate => :number, :default => 100
 
   # The formatter of log message, by default is message with timestamp and host as prefix
   # Use %{@json} tag to send whole event

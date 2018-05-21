@@ -38,7 +38,7 @@ module LogStash; module Outputs; class SumoLogic;
     
     def build()
       headers = build_common()
-      headers[CATEGORY_HEADER] = @source_category
+      headers[CATEGORY_HEADER] = @source_category unless @source_category.blank?
       append_content_header(headers)
       headers
     end # def build
@@ -55,8 +55,8 @@ module LogStash; module Outputs; class SumoLogic;
       headers = Hash.new()
       headers.merge!(@extra_headers)
       headers[CLIENT_HEADER] = CLIENT_HEADER_VALUE
-      headers[HOST_HEADER] = @source_host
-      headers[NAME_HEADER] = @source_name
+      headers[HOST_HEADER] = @source_host unless @source_host.blank?
+      headers[NAME_HEADER] = @source_name unless @source_name.blank?
       append_compress_header(headers)
       headers
     end # build_common
