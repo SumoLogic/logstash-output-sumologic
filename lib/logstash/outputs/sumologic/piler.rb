@@ -16,7 +16,7 @@ module LogStash; module Outputs; class SumoLogic;
       @pile_max = config["pile_max"] ||= 0
       @queue = queue
       @stats = stats
-
+      @stopping = Concurrent::AtomicBoolean.new(false)
       @is_pile = (@interval > 0 && @pile_max > 0)
 
       if (@is_pile)
@@ -28,7 +28,6 @@ module LogStash; module Outputs; class SumoLogic;
     end # def initialize
 
     def start()
-      @stopping = Concurrent::AtomicBoolean.new(false)
       if (@is_pile)
         @piler_t = Thread.new { 
           while @stopping.false?

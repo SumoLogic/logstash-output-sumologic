@@ -19,21 +19,23 @@ module LogStash; module Outputs; class SumoLogic;
       @client = client
       @queue = queue
       @stats = stats
-
+      @stopping = Concurrent::AtomicBoolean.new(false)
       @url = config["url"]
       @sender_max = (config["sender_max"] ||= 1) < 1 ? 1 : config["sender_max"]
       @sleep_before_requeue = config["sleep_before_requeue"] ||= 30
+      @stats_enabled = config["stats_enabled"] ||= false
 
       @tokens = SizedQueue.new(@sender_max)
       @sender_max.times { |t| @tokens << t }
 
-      @headers = LogStash::Outputs::SumoLogic::HeaderBuilder.new(config).build()
+      @header_builder = LogStash::Outputs::SumoLogic::HeaderBuilder.new(config)
+      @headers = @header_builder.build()
+      @stats_headers = @header_builder.build_stats()
       @compressor = LogStash::Outputs::SumoLogic::Compressor.new(config)
 
     end # def initialize
 
     def start()
-      @stopping = Concurrent::AtomicBoolean.new(false)
 
       @sender_t = Thread.new {
         while @stopping.false?
@@ -98,9 +100,16 @@ module LogStash; module Outputs; class SumoLogic;
       end
       
       token = @tokens.pop()
-      body = @compressor.compress(content)
+
+      if @stats_enabled && content.start_with?(STATS_TAG)
+        body = @compressor.compress(content[STATS_TAG.length..-1])
+        headers = @stats_headers
+      else
+        body = @compressor.compress(content)
+        headers = @headers
+      end
   
-      request = @client.send(:background).send(:post, @url, :body => body, :headers => @headers)
+      request = @client.send(:background).send(:post, @url, :body => body, :headers => headers)
       
       request.on_complete do
         @tokens << token
@@ -113,6 +122,7 @@ module LogStash; module Outputs; class SumoLogic;
             "HTTP request rejected",
             :token => token,
             :code => response.code,
+            :headers => headers,
             :contet => content
           )
           if response.code == 429 || response.code == 503 || response.code == 504

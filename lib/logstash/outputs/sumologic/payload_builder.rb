@@ -14,7 +14,8 @@ module LogStash; module Outputs; class SumoLogic;
     JSON_PLACEHOLDER = "%{@json}"
     ALWAYS_EXCLUDED = [ "@timestamp", "@version" ]
     
-    def initialize(config)
+    def initialize(stats, config)
+      @stats = stats
       
       @format = config["format"] ||= DEFAULT_LOG_FORMAT
       @json_mapping = config["json_mapping"]
@@ -42,6 +43,7 @@ module LogStash; module Outputs; class SumoLogic;
     private
 
     def build_log_payload(event)
+      @stats.record_log_process()
       apply_template(@format, event)
     end # def event2log
   
@@ -52,9 +54,11 @@ module LogStash; module Outputs; class SumoLogic;
       else
         expand_hash(@metrics, event)
       end
-      source.flat_map { |key, value|
+      lines = source.flat_map { |key, value|
         get_single_line(event, key, value, timestamp)
-      }.reject(&:nil?).join("\n")
+      }.reject(&:nil?)
+      @stats.record_metrics_process(lines.size)
+      lines.join($/)
     end # def event2metrics
   
     def event_as_metrics(event)

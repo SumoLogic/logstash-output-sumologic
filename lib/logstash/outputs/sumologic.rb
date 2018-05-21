@@ -18,6 +18,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   require "logstash/outputs/sumologic/compressor"
   require "logstash/outputs/sumologic/header_builder"
   require "logstash/outputs/sumologic/message_queue"
+  require "logstash/outputs/sumologic/monitor"
   require "logstash/outputs/sumologic/payload_builder"
   require "logstash/outputs/sumologic/piler"
   require "logstash/outputs/sumologic/sender"
@@ -103,17 +104,25 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # For message fail to send or get 429/503/504 response, try to resend after (x) seconds
   config :sleep_before_requeue, :validate => :number, :default => 30
 
+  # Sending throughput data as metrics
+  config :stats_enabled, :validate => :boolean, :default => false
+
+  # Sending throughput data points every (x) seconds
+  config :stats_interval, :validate => :number, :default => 60
+
   attr_reader :stats
   
   def register
     @stats = Statistics.new()
     @queue = MessageQueue.new(@stats, config)
-    @builder = PayloadBuilder.new(config)
+    @builder = PayloadBuilder.new(@stats, config)
     @piler = Piler.new(@queue, @stats, config)
+    @monitor = Monitor.new(@queue, @stats, config)
     @sender = Sender.new(client, @queue, @stats, config)
     if @sender.connect()
       @sender.start()
       @piler.start()
+      @monitor.start()
     else
       throw "connection failed, please check the url and retry"
     end
@@ -124,6 +133,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     begin
       content = Array(events).map { |event| @builder.build(event) }.join($/)
       @queue.enq(content)
+      @stats.record_multi_input(events.size, content.bytesize)
     rescue Exception => exception
       log_err(
         "Error when processing events",
@@ -151,6 +161,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def receive
 
   def close
+    @monitor.stop()
     @piler.stop()
     @sender.stop()
     client.close()

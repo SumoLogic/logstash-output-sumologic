@@ -11,8 +11,8 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end
 
   context "should build log payload in default format" do
-
-    let(:builder) { LogStash::Outputs::SumoLogic::PayloadBuilder.new("url" => "http://localhost/1234") }
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
+    let(:builder) { LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, "url" => "http://localhost/1234") }
     let(:event) { LogStash::Event.new("host" => "myHost", "message" => "Hello world") }
 
     it "start with a valid timestamp" do
@@ -27,8 +27,8 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
   
   context "should build log payload with @json tag" do
-
-    let(:builder) { LogStash::Outputs::SumoLogic::PayloadBuilder.new("url" => "http://localhost/1234", "format" => "%{@json}") }
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
+    let(:builder) { LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, "url" => "http://localhost/1234", "format" => "%{@json}") }
     let(:event) { LogStash::Event.new("host" => "myHost", "message" => "Hello world") }
 
     it "include host field" do
@@ -46,8 +46,8 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build log payload with customized format" do
-
-    let(:builder) { LogStash::Outputs::SumoLogic::PayloadBuilder.new("url" => "http://localhost/1234", "format" => "%{@timestamp} %{foo} %{bar}") }
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
+    let(:builder) { LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, "url" => "http://localhost/1234", "format" => "%{@timestamp} %{foo} %{bar}") }
     let(:event) { LogStash::Event.new("host" => "myHost", "foo" => "fancy", "bar" => 24) }
 
     it "start with a valid timestamp" do
@@ -62,9 +62,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build log payload with customized json_mapping" do
-
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) { 
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "format" => "%{host} %{@json}",
         "json_mapping" => {
@@ -82,9 +82,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with graphite format" do
-
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "hurray.%{foo}" => "%{bar}"
@@ -104,9 +104,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with carbon2 format" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "hurray.%{foo}" => "%{bar}"
@@ -125,9 +125,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with metrics_name override" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "hurray.%{foo}" => "%{bar}"
@@ -147,9 +147,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with intrinsic_tags override" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "bar" => "%{bar}"
@@ -171,9 +171,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with meta_tags override" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "bar" => "%{bar}"
@@ -198,8 +198,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with multi lines with different values (graphite)" do
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "cpu1" => "%{cpu1}",
@@ -220,9 +221,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with multi lines with different values (carbon2)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "cpu1" => "%{cpu1}",
@@ -247,9 +248,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with non-number value dropped (graphite)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "cpu1" => "%{cpu1}",
@@ -270,9 +271,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with non-number value dropped (carbon2)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "metrics" => {
           "cpu1" => "%{cpu1}",
@@ -299,9 +300,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with fields_as_metrics (graphite)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "fields_as_metrics" => true,
         "metrics_format" => "graphite")
@@ -336,9 +337,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should build metrics payload with fields_as_metrics (carbon2)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "fields_as_metrics" => true,
         "intrinsic_tags" => {
@@ -378,9 +379,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should hornor fields_include when fields_as_metrics (graphite)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "fields_as_metrics" => true,
         "metrics_format" => "graphite",
@@ -412,9 +413,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should hornor fields_include when fields_as_metrics (carbon2)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "fields_as_metrics" => true,
         "intrinsic_tags" => {
@@ -451,9 +452,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should hornor fields_exclude when fields_as_metrics (graphite)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "fields_as_metrics" => true,
         "metrics_format" => "graphite",
@@ -483,9 +484,9 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
   end # context
 
   context "should hornor fields_exclude when fields_as_metrics (carbon2)" do
-    
+    let(:stats) { LogStash::Outputs::SumoLogic::Statistics.new() }
     let(:builder) {
-      LogStash::Outputs::SumoLogic::PayloadBuilder.new(
+      LogStash::Outputs::SumoLogic::PayloadBuilder.new(stats, 
         "url" => "http://localhost/1234",
         "fields_as_metrics" => true,
         "intrinsic_tags" => {
