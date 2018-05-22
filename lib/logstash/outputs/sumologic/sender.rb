@@ -123,7 +123,7 @@ module LogStash; module Outputs; class SumoLogic;
             :token => token,
             :code => response.code,
             :headers => headers,
-            :contet => content
+            :contet => content[0..20]
           )
           if response.code == 429 || response.code == 503 || response.code == 504
             requeue_message(content)
@@ -157,7 +157,7 @@ module LogStash; module Outputs; class SumoLogic;
         log_warn(
           "requeue message",
           :after => @sleep_before_requeue,
-          :size => content.bytesize)
+          :content => content[0..20])
         Stud.stoppable_sleep(@sleep_before_requeue) { @stopping.true? }
         @queue.enq(content)
       end
