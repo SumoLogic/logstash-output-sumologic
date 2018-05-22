@@ -54,8 +54,8 @@ class LogStash::Outputs::SumoLogic
     @server = Server.new
   end
   
-  def send_request(content)
-    @server.push(content, get_headers())
+  def send_request(content, key=nil)
+    @server.push(content, get_headers(key))
   end
 
 end

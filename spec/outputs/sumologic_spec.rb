@@ -106,6 +106,20 @@ describe LogStash::Outputs::SumoLogic do
 
   end
 
+  context "override source_category dynamic" do
+    
+    subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "source_category" => "%{[category]}") }
+    let(:event) { LogStash::Event.new("host" => "myHost", "category" => "mycategory", "message" => "Hello world") }
+
+    it "check header" do
+      expect(server.header).to eq({"X-Sumo-Host"=>`hostname`.strip, 
+				   "X-Sumo-Client"=>"logstash-output-sumologic", 
+				   "Content-Type"=>"text/plain", 
+				   "X-Sumo-Category"=>"mycategory"})
+    end
+
+  end
+
   context "override source_name" do
     
     subject { LogStash::Outputs::SumoLogic.new("url" => "http://localhost/1234", "source_name" => "my source name") }

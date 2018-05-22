@@ -36,6 +36,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   DEFLATE = "deflate"
   GZIP = "gzip"
   ALWAYS_EXCLUDED = [ "@timestamp", "@version" ]
+  MAX_BATCH_COUNT = 10000
 
   # The URL to send logs to. This should be given when creating a HTTP Source
   # on Sumo Logic web app. See http://help.sumologic.com/Send_Data/Sources/HTTP_Source
@@ -61,6 +62,9 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
 
   # Hold messages for at least (x) seconds as a pile; 0 means sending every events immediately  
   config :interval, :validate => :number, :default => 0
+
+  # The max number of log events in a batch.
+  config :batch_count, :validate => :number, :default => MAX_BATCH_COUNT
 
   # The formatter of log message, by default is message with timestamp and host as prefix
   # Use %{@json} tag to send whole event
@@ -108,8 +112,9 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     @request_tokens = SizedQueue.new(@pool_max)
     @pool_max.times { |t| @request_tokens << true }
     @timer = Time.now
-    @pile = Array.new
+    @piles = Hash.new
     @semaphore = Mutex.new
+    @current_batch_size = 0
     connect
   end # def register
 
@@ -119,6 +124,15 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     client.execute!
   end # def multi_receive
   
+  private
+  def get_source_category(event)
+    if @source_category
+        event.sprintf(@source_category)
+    else
+        nil
+    end
+  end
+
   public
   def receive(event)
     begin
@@ -129,7 +143,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       end
 
       content = event2content(event)
-      queue_and_send(content)
+      queue_and_send(content, get_source_category(event))
 
     rescue
       log_failure(
@@ -142,8 +156,11 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   public
   def close
     @semaphore.synchronize {
-      send_request(@pile.join($/))
-      @pile.clear
+      @piles.each do |sc, pile|
+        send_request(pile.join($/), sc)
+        @piles[sc].clear
+      end
+      @piles.clear
     }
     client.close
   end # def close
@@ -155,28 +172,35 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def connect
   
   private
-  def queue_and_send(content)
+  def queue_and_send(content, key)
     if @interval <= 0 # means send immediately
-      send_request(content)
+      send_request(content, key)
     else
       @semaphore.synchronize {
+        @current_batch_size += 1
         now = Time.now
-        @pile << content
+        if !@piles.key?(key)
+            @piles[key] = Array.new
+        end
+        @piles[key] << content
 
-        if now - @timer > @interval # ready to send
-          send_request(@pile.join($/))
+        if now - @timer > @interval || @current_batch_size >= @batch_count # ready to send
+          @piles.each do |sc, pile|
+            send_request(pile.join($/), sc)
+            @piles[sc].clear
+          end
           @timer = now
-          @pile.clear
+          @current_batch_size = 0
         end
       }
     end
   end
 
   private
-  def send_request(content)
+  def send_request(content, sc=nil)
     token = @request_tokens.pop
     body = compress(content)
-    headers = get_headers()
+    headers = get_headers(sc)
 
     request = client.send(:parallel).send(:post, @url, :body => body, :headers => headers)
     request.on_complete do
@@ -232,12 +256,12 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def gzip
 
   private
-  def get_headers()
+  def get_headers(sc=nil)
 
     base = {}
     base = @extra_headers if @extra_headers.is_a?(Hash)
 
-    base[CATEGORY_HEADER] = @source_category if @source_category
+    base[CATEGORY_HEADER] = sc if sc
     base[HOST_HEADER] = @source_host if @source_host
     base[NAME_HEADER] = @source_name if @source_name
     base[CLIENT_HEADER] = 'logstash-output-sumologic'
