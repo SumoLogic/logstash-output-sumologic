@@ -158,7 +158,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
     @semaphore.synchronize {
       @piles.each do |sc, pile|
         send_request(pile.join($/), sc)
-        pile.clear
+        @piles[sc].clear
       end
       @piles.clear
     }
@@ -177,7 +177,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       send_request(content, key)
     else
       @semaphore.synchronize {
-        @current_batch_size++
+        @current_batch_size += 1
         now = Time.now
         if !@piles.key?(key)
             @piles[key] = Array.new
@@ -187,7 +187,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
         if now - @timer > @interval || @current_batch_size >= @batch_count # ready to send
           @piles.each do |sc, pile|
             send_request(pile.join($/), sc)
-            @pile.clear
+            @piles[sc].clear
           end
           @timer = now
           @current_batch_size = 0
@@ -197,7 +197,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end
 
   private
-  def send_request(content, key=nil)
+  def send_request(content, sc=nil)
     token = @request_tokens.pop
     body = compress(content)
     headers = get_headers(sc)
