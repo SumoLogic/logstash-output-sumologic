@@ -17,6 +17,7 @@ module LogStash; module Outputs; class SumoLogic;
 
       @enabled = config["stats_enabled"] ||= false
       @interval = config["stats_interval"] ||= 60
+      @interval = @interval < 0 ? 0 : @interval
       @last = Hash.new(0)
     end # initialize
 

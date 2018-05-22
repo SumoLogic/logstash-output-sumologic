@@ -119,7 +119,7 @@ module LogStash; module Outputs; class SumoLogic;
         @stats.record_response_success(response.code)
         if response.code < 200 || response.code > 299
           log_err(
-            "HTTP request rejected",
+            "HTTP request rejected(#{response.code})",
             :token => token,
             :code => response.code,
             :headers => headers,
@@ -153,7 +153,7 @@ module LogStash; module Outputs; class SumoLogic;
     end # def send_request
 
     def requeue_message(content)
-      if @stopping.false?
+      if @stopping.false? && @sleep_before_requeue >= 0
         log_warn(
           "requeue message",
           :after => @sleep_before_requeue,

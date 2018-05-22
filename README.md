@@ -4,6 +4,9 @@
 
 This is an output plugin for [Logstash](https://github.com/elastic/logstash).
 It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
+| TLS Deprecation Notice |
+| --- |
+| In keeping with industry standard security best practices, as of May 31, 2018, the Sumo Logic service will only support TLS version 1.2 going forward. Verify that all connections to Sumo Logic endpoints are made from software that supports TLS 1.2. |
 
 | TLS Deprecation Notice |
 | --- |
@@ -102,7 +105,7 @@ Logon to Sumo Logic [web app](https://service.sumologic.com/) and run
 | `fields_as_metrics`    | boolean | No        | `false`       | If `true`, all fields in logstash event with number value will be sent as a metrics (with filtering by `fields_include` and `fields_exclude` ; the `metics` parameter is ignored.
 | `fields_include`       | array   | No        | all fields    | Working with `fields_as_metrics` parameter, only the fields which full name matching these RegEx pattern(s) will be included in metrics.
 | `fields_exclude`       | array   | No        | none          | Working with `fields_as_metrics` parameter, the fields which full name matching these RegEx pattern(s) will be ignored in metrics.
-| `sleep_before_requeue` | number  | No       | `30`           | The message failed to send to server will be retried after (x) seconds
+| `sleep_before_requeue` | number  | No       | `30`           | The message failed to send to server will be retried after (x) seconds. Not retried if negative number set
 | `stats_enabled`        | boolean | No       | `false`        | If `true`, stats of this plugin will be sent as metrics
 | `stats_interval`       | number  | No       | `60`           | The stats will be sent every (x) seconds
 
