@@ -4,6 +4,7 @@
 
 This is an output plugin for [Logstash](https://github.com/elastic/logstash).
 It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
+
 | TLS Deprecation Notice |
 | --- |
 | In keeping with industry standard security best practices, as of May 31, 2018, the Sumo Logic service will only support TLS version 1.2 going forward. Verify that all connections to Sumo Logic endpoints are made from software that supports TLS 1.2. |

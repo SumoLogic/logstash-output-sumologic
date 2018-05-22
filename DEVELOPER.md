@@ -1,8 +1,8 @@
-# logstash-output-sumologic
+# Development Guide
 
 Logstash output plugin for delivering log to Sumo Logic cloud service through HTTP source.
 
-# How to build .gem file from repository
+## How to build .gem file from repository
 
 Open logstash-output-sumologic.gemspec and make any necessary configuration changes.
 In your local Git clone, run:
@@ -24,7 +24,7 @@ And then install the plugin locally:
 bin/logstash-plugin install <full path of .gem>
 ```
 
-# How to run test with rspec
+## How to run test with rspec
 
 The test requires JRuby to run. So you need to install [JRuby](http://jruby.org/) and [RVM](https://rvm.io/) (for switching between JRuby and Ruby) first.
 And then run:
@@ -33,3 +33,5 @@ And then run:
 rvm use jruby
 rspec spec/
 ```
+
+The project is integrated to the Travis CI now. Make sure all test passed before creating PR
