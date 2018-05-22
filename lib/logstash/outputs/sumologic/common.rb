@@ -15,6 +15,7 @@ module LogStash; module Outputs; class SumoLogic;
 
     # for debugging test
     LOG_TO_CONSOLE = false
+    @@logger = nil
 
     def set_logger(logger)
       @@logger = logger
