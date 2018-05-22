@@ -22,6 +22,7 @@ module LogStash; module Outputs; class SumoLogic;
     end # initialize
 
     def start()
+      @stopping.make_false()
       if (@enabled)
         @monitor_t = Thread.new { 
           while @stopping.false?

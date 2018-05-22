@@ -28,6 +28,7 @@ module LogStash; module Outputs; class SumoLogic;
     end # def initialize
 
     def start()
+      @stopping.make_false()
       if (@is_pile)
         @piler_t = Thread.new { 
           while @stopping.false?

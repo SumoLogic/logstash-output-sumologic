@@ -36,7 +36,7 @@ module LogStash; module Outputs; class SumoLogic;
     end # def initialize
 
     def start()
-
+      @stopping.make_false()
       @sender_t = Thread.new {
         while @stopping.false?
           content = @queue.deq()
