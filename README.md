@@ -9,10 +9,6 @@ It is fully free and fully open source. The license is Apache 2.0, meaning you a
 | --- |
 | In keeping with industry standard security best practices, as of May 31, 2018, the Sumo Logic service will only support TLS version 1.2 going forward. Verify that all connections to Sumo Logic endpoints are made from software that supports TLS 1.2. |
 
-| TLS Deprecation Notice |
-| --- |
-| In keeping with industry standard security best practices, as of May 31, 2018, the Sumo Logic service will only support TLS version 1.2 going forward. Verify that all connections to Sumo Logic endpoints are made from software that supports TLS 1.2. |
-
 ## Getting Started
 
 This guide is for the users just want to download the binary and make the plugin work. For the developer, please refer to the [Developer Guide](DEVELOPER.md)
