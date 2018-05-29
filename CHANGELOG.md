@@ -1,11 +1,16 @@
-## 1.1.4
- - bug fix
+# Change Log
 
-## 1.1.3
- - bug fix
+## 1.2.0
+
+- Support message piling with both `interval` and `pile_max`
+- Support in memory message queue to overall enhance throughput
+- Retry sending when get throttled or temporary server problem
+- Support monitor throughput statistics in metrics
 
 ## 1.1.0
- - Support metrics sending
+
+- Support metrics sending
 
 ## 1.0.0
- - Initial release
+
+- Initial release

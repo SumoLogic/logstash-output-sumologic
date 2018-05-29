@@ -1,4 +1,7 @@
 .DS_Store
+.ruby-version.*
 *.gem
 .vscode/*
+.bundle/*
+bin/*
 Gemfile.lock
