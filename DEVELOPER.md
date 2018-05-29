@@ -26,12 +26,14 @@ bin/logstash-plugin install <full path of .gem>
 
 ## How to run test with rspec
 
-The test requires JRuby to run. So you need to install [JRuby](http://jruby.org/) and [RVM](https://rvm.io/) (for switching between JRuby and Ruby) first.
+The test requires JRuby to run. So you need to install [JRuby](http://jruby.org/), [bundle](https://bundler.io/bundle_install.html) and [RVM](https://rvm.io/) (for switching between JRuby and Ruby) first.
 And then run:
 
 ```bash
 rvm use jruby
+bundle install
+export sumo_url=https://events.sumologic.net/receiver/v1/http/XXXXXXXXXX
 rspec spec/
 ```
 
-The project is integrated to the Travis CI now. Make sure all test passed before creating PR
+The project is integrated to the Travis CI now. Make sure [all test passed](https://travis-ci.org/SumoLogic/logstash-output-sumologic) before creating PR

@@ -18,7 +18,6 @@ module LogStash; module Outputs; class SumoLogic;
       @enabled = config["stats_enabled"] ||= false
       @interval = config["stats_interval"] ||= 60
       @interval = @interval < 0 ? 0 : @interval
-      @last = Hash.new(0)
     end # initialize
 
     def start()
@@ -54,34 +53,20 @@ module LogStash; module Outputs; class SumoLogic;
         "total_log_lines", 
         "total_output_requests",
         "total_output_bytes",
-        "total_output_bytes_compressed"
+        "total_output_bytes_compressed",
+        "total_response_times",
+        "total_response_success"
       ].map { |key|
-        diff = diff_value(key)
-        build_metric_line(key[6..-1], diff, timestamp)
+        value = @stats.send(key).value
+        build_metric_line(key, value, timestamp)
       }.join($/)
       
-      rate = build_response_success_rate(timestamp)
-      
-      "#{STATS_TAG}#{counters}\n#{rate}"
+      "#{STATS_TAG}#{counters}"
     end # def build_stats_payload
-
-    def build_response_success_rate(timestamp)
-      success_diff = diff_value("total_response_success")
-      total_diff = diff_value("total_response_times")
-      percentage = success_diff * 1.0 / total_diff
-      build_metric_line("response_success_rate", percentage, timestamp)
-    end # def build_response_success_rate
 
     def build_metric_line(key, value, timestamp)
       "metric=#{key} interval=#{@interval}  category=monitor #{value} #{timestamp}"
     end # def build_metric_line
-
-    def diff_value(key)
-      newValue = @stats.send(key).value
-      diff = newValue - @last[key]
-      @last.store(key, newValue)
-      diff
-    end # def diff_value
 
   end
 end; end; end        

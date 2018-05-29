@@ -5,7 +5,7 @@
 - Support message piling with both `interval` and `pile_max`
 - Support in memory message queue to overall enhance throughput
 - Retry sending when get throttled or temporary server problem
-- Support throughput statistics in metrics
+- Support monitor throughput statistics in metrics
 
 ## 1.1.0
 

@@ -206,11 +206,11 @@ describe LogStash::Outputs::SumoLogic, :unless => (ENV["sumo_url"].to_s.empty?) 
         "compress" => true,
         "compress_encoding" => "gzip",
         "stats_enabled" => true,
-        "stats_interval" => 10
+        "stats_interval" => 1
       )
     }
 
-    log_length = 500 + rand(1000)
+    log_length = 5000 + rand(1000)
     log_count = 50000 + rand(10000)
   
     specify {
