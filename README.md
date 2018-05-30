@@ -1,6 +1,6 @@
 # Logstash Sumo Logic Output Plugin
 
-[![Build Status](https://travis-ci.org/SumoLogic/logstash-output-sumologic.svg?branch=master)](https://travis-ci.org/SumoLogic/logstash-output-sumologic)
+[![Build Status](https://travis-ci.org/SumoLogic/logstash-output-sumologic.svg?branch=master)](https://travis-ci.org/SumoLogic/logstash-output-sumologic)  [![Gem Version](https://badge.fury.io/rb/logstash-output-sumologic.svg)](https://badge.fury.io/rb/logstash-output-sumologic)
 
 This is an output plugin for [Logstash](https://github.com/elastic/logstash).
 It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
@@ -140,7 +140,7 @@ On the other side, this version is marked as thread safe so if necessary, multip
 
 ### Monitor throughput in metrics
 
-If your Sumo Logic account supporting metrics feature, you can enable the stats monitor of plugin with configuring `stats_enabled` to `true`. For every `stats_interval` seconds, a batch of metrics data points will be sent to Sumo Logic with source category `XXX.stats` (`XXX` is the source category of main output). Include:
+If your Sumo Logic account supports metrics feature, you can enable the stats monitor of this plugin with configuring `stats_enabled` to `true`. For every `stats_interval` seconds, a batch of metrics data points will be sent to Sumo Logic with source category `XXX.stats` (`XXX` is the source category of main output):
 
 | Metric                          | Description                                                 |
 | ------------------------------- | ----------------------------------------------------------- |
@@ -153,3 +153,5 @@ If your Sumo Logic account supporting metrics feature, you can enable the stats 
 | `total_output_bytes_compressed` | Total bytes of payloads sent to Sumo Logic server (after compressing)
 | `total_response_times`          | Total number of responses acknowledged by Sumo Logic server
 | `total_response_success`        | Total number of accepted(200) acknowledged by Sumo Logic server
+
+**NOTE:** The data points will consume DPM quota
