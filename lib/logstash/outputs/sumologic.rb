@@ -136,13 +136,11 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       @queue.enq(content)
       @stats.record_multi_input(events.size, content.bytesize)
     rescue Exception => exception
-      log_err(
-        "Error when processing events",
+      log_err("error when processing events",
         :events => events,
         :message => exception.message,
         :class => exception.class.name,
-        :backtrace => exception.backtrace
-    )
+        :backtrace => exception.backtrace)
     end
   end # def multi_receive
   
@@ -151,13 +149,11 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
       content = @builder.build(event)
       @piler.input(content)
     rescue Exception => exception
-      log_err(
-        "Error when processing event",
+      log_err("error when processing event",
         :event => event,
         :message => exception.message,
         :class => exception.class.name,
-        :backtrace => exception.backtrace
-    )
+        :backtrace => exception.backtrace)
     end
   end # def receive
 
