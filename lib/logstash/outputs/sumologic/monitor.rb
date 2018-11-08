@@ -21,6 +21,7 @@ module LogStash; module Outputs; class SumoLogic;
     end # initialize
 
     def start()
+      log_info("starting monitor...", :interval => @interval)
       @stopping.make_false()
       if (@enabled)
         @monitor_t = Thread.new { 
@@ -37,9 +38,9 @@ module LogStash; module Outputs; class SumoLogic;
     def stop()
       @stopping.make_true()
       if (@enabled)
-        log_info "shutting down monitor..."
+        log_info("shutting down monitor...")
         @monitor_t.join
-        log_info "monitor is fully shutted down"
+        log_info("monitor is fully shutted down")
       end
     end # def stop
 
@@ -58,9 +59,12 @@ module LogStash; module Outputs; class SumoLogic;
         "total_response_success"
       ].map { |key|
         value = @stats.send(key).value
+        log_dbg("stats",
+          :key => key,
+          :value => value)
         build_metric_line(key, value, timestamp)
       }.join($/)
-      
+
       "#{STATS_TAG}#{counters}"
     end # def build_stats_payload
 

@@ -30,10 +30,13 @@ module LogStash; module Outputs; class SumoLogic;
     def start()
       @stopping.make_false()
       if (@is_pile)
+        log_info("starting piler...", 
+          :max => @pile_max, 
+          :timeout => @interval)
         @piler_t = Thread.new { 
           while @stopping.false?
             Stud.stoppable_sleep(@interval) { @stopping.true? }
-            log_dbg("timeout, enqueue pile now")
+            log_dbg("timeout", :timeout => @interval)
             enq_and_clear()
           end # while
         }
@@ -43,15 +46,16 @@ module LogStash; module Outputs; class SumoLogic;
     def stop()
       @stopping.make_true()
       if (@is_pile)
-        log_info "shutting down piler..."
+        log_info("shutting down piler...")
         @piler_t.join
-        log_info "piler is fully shutted down"
+        log_info("piler is fully shutted down")
       end
     end # def stop
 
     def input(entry)
       if (@stopping.true?)
-        log_warn "piler is shutting down, message ignored", "message" => entry
+        log_warn("piler is shutting down, message dropped", 
+          "message" => entry)
       elsif (@is_pile)
         @semaphore.synchronize {
           if @pile_size + entry.bytesize > @pile_max
