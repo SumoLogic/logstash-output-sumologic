@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.2.1
+
+- Bug fix on plug-in logging and samples
+
 ## 1.2.0
 
 - Support message piling with both `interval` and `pile_max`
