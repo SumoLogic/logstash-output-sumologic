@@ -5,10 +5,6 @@
 This is an output plugin for [Logstash](https://github.com/elastic/logstash).
 It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
 
-| TLS Deprecation Notice |
-| --- |
-| In keeping with industry standard security best practices, as of May 31, 2018, the Sumo Logic service will only support TLS version 1.2 going forward. Verify that all connections to Sumo Logic endpoints are made from software that supports TLS 1.2. |
-
 ## Getting Started
 
 This guide is for the users just want to download the binary and make the plugin work. For the developer, please refer to the [Developer Guide](DEVELOPER.md)
@@ -155,3 +151,8 @@ If your Sumo Logic account supports metrics feature, you can enable the stats mo
 | `total_response_success`        | Total number of accepted(200) acknowledged by Sumo Logic server
 
 **NOTE:** The data points will consume DPM quota
+
+
+### TLS 1.2 Requirement
+
+Sumo Logic only accepts connections from clients using TLS version 1.2 or greater. To utilize the content of this repo, ensure that it's running in an execution environment that is configured to use TLS 1.2 or greater.
