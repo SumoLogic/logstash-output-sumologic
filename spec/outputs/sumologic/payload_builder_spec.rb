@@ -69,14 +69,13 @@ describe LogStash::Outputs::SumoLogic::PayloadBuilder do
         "format" => "%{host} %{@json}",
         "json_mapping" => {
           "foo" => "%{foo}",
-          "bar" => "%{bar}",
-          "%{foo}" => "%{bar}"
+          "bar" => "%{bar}"
         })
     }
     let(:event) { LogStash::Event.new("host" => "myHost", "foo" => "fancy", "bar" => 24) }
 
     specify {
-      expect(result).to eq("myHost {\"foo\":\"fancy\",\"bar\":\"24\",\"fancy\":\"24\"}")
+      expect(result).to eq("myHost {\"foo\":\"fancy\",\"bar\":\"24\"}")
     }
 
   end # context

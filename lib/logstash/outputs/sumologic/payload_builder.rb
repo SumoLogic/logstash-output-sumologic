@@ -128,12 +128,17 @@ module LogStash; module Outputs; class SumoLogic;
     end # def expand_hash
     
     def apply_template(template, event)
-      if template.include? JSON_PLACEHOLDER
+      if template == JSON_PLACEHOLDER
+        hash = event2hash(event)
+        LogStash::Json.dump(hash)
+      elsif template.include? JSON_PLACEHOLDER
+        result = event.sprintf(template)
         hash = event2hash(event)
         dump = LogStash::Json.dump(hash)
-        template = template.gsub(JSON_PLACEHOLDER) { dump }
+        result.gsub(JSON_PLACEHOLDER) { dump }
+      else
+        event.sprintf(template)
       end
-      event.sprintf(template)
     end # def expand
     
     def get_metrics_name(event, name)
