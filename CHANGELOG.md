@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.2.2
+
+- Bug fix: memory leak when using `%{@json}` in format
+
 ## 1.2.1
 
 - Bug fix on plug-in logging and samples
