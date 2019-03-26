@@ -1,11 +1,11 @@
 # encoding: utf-8
-require "stringio"
-require "zlib"
-require "logstash/outputs/sumologic/common"
 
 module LogStash; module Outputs; class SumoLogic;
   class Compressor
 
+    require "stringio"
+    require "zlib"
+    require "logstash/outputs/sumologic/common"
     include LogStash::Outputs::SumoLogic::Common
 
     def initialize(config)

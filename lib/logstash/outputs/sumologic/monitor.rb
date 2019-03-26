@@ -1,11 +1,11 @@
 # encoding: utf-8
-require "logstash/outputs/sumologic/common"
-require "logstash/outputs/sumologic/statistics"
-require "logstash/outputs/sumologic/message_queue"
 
 module LogStash; module Outputs; class SumoLogic;
   class Monitor
 
+    require "logstash/outputs/sumologic/common"
+    require "logstash/outputs/sumologic/statistics"
+    require "logstash/outputs/sumologic/message_queue"
     include LogStash::Outputs::SumoLogic::Common
 
     attr_reader :is_pile

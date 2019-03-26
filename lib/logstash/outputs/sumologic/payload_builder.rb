@@ -1,12 +1,11 @@
 # encoding: utf-8
-require "logstash/json"
-require "logstash/event"
-
-require "logstash/outputs/sumologic/common"
 
 module LogStash; module Outputs; class SumoLogic;
   class PayloadBuilder
     
+    require "logstash/json"
+    require "logstash/event"
+    require "logstash/outputs/sumologic/common"
     include LogStash::Outputs::SumoLogic::Common
 
     TIMESTAMP_FIELD = "@timestamp"
