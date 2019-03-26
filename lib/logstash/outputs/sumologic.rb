@@ -14,6 +14,7 @@ require "logstash/plugin_mixins/http_client"
 class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   declare_threadsafe!
   
+  require "logstash/outputs/sumologic/batch"
   require "logstash/outputs/sumologic/common"
   require "logstash/outputs/sumologic/compressor"
   require "logstash/outputs/sumologic/header_builder"
@@ -114,9 +115,8 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   
   def register
     set_logger(@logger)
-    @stats = Statistics.new()
+    @stats = Statistics.new
     @queue = MessageQueue.new(@stats, config)
-    @builder = PayloadBuilder.new(@stats, config)
     @piler = Piler.new(@queue, @stats, config)
     @monitor = Monitor.new(@queue, @stats, config)
     @sender = Sender.new(client, @queue, @stats, config)
@@ -130,24 +130,12 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   end # def register
 
   def multi_receive(events)
-    # events.map { |e| receive(e) }
-    begin
-      content = Array(events).map { |event| @builder.build(event) }.join($/)
-      @queue.enq(content)
-      @stats.record_multi_input(events.size, content.bytesize)
-    rescue Exception => exception
-      log_err("error when processing events",
-        :events => events,
-        :message => exception.message,
-        :class => exception.class.name,
-        :backtrace => exception.backtrace)
-    end
+    Array(events).map { |event| receive(event) }
   end # def multi_receive
   
   def receive(event)
     begin
-      content = @builder.build(event)
-      @piler.input(content)
+      @piler.input(event)
     rescue Exception => exception
       log_err("error when processing event",
         :event => event,

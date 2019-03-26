@@ -1,19 +1,19 @@
 # encoding: utf-8
-require "net/https"
-require "socket"
-require "thread"
-require "uri"
-require "logstash/outputs/sumologic/common"
-require "logstash/outputs/sumologic/compressor"
-require "logstash/outputs/sumologic/header_builder"
-require "logstash/outputs/sumologic/statistics"
-require "logstash/outputs/sumologic/message_queue"
 
 module LogStash; module Outputs; class SumoLogic;
   class Sender
 
+    require "net/https"
+    require "socket"
+    require "thread"
+    require "uri"
+    require "logstash/outputs/sumologic/common"
+    require "logstash/outputs/sumologic/compressor"
+    require "logstash/outputs/sumologic/header_builder"
+    require "logstash/outputs/sumologic/statistics"
+    require "logstash/outputs/sumologic/message_queue"
     include LogStash::Outputs::SumoLogic::Common
-    STOP_TAG = "PLUGIN STOPPED"
+
 
     def initialize(client, queue, stats, config)
       @client = client
@@ -28,9 +28,6 @@ module LogStash; module Outputs; class SumoLogic;
       @tokens = SizedQueue.new(@sender_max)
       @sender_max.times { |t| @tokens << t }
 
-      @header_builder = LogStash::Outputs::SumoLogic::HeaderBuilder.new(config)
-      @headers = @header_builder.build()
-      @stats_headers = @header_builder.build_stats()
       @compressor = LogStash::Outputs::SumoLogic::Compressor.new(config)
 
     end # def initialize
@@ -42,11 +39,11 @@ module LogStash; module Outputs; class SumoLogic;
       @stopping.make_false()
       @sender_t = Thread.new {
         while @stopping.false?
-          content = @queue.deq()
-          send_request(content)
+          batch = @queue.deq()
+          send_request(batch)
         end # while
-        @queue.drain().map { |content| 
-          send_request(content)
+        @queue.drain().map { |batch| 
+          send_request(batch)
         }
         log_info("waiting while senders finishing...")
         while @tokens.size < @sender_max
@@ -58,7 +55,7 @@ module LogStash; module Outputs; class SumoLogic;
     def stop()
       log_info("shutting down sender...")
       @stopping.make_true()
-      @queue.enq(STOP_TAG)
+      @queue.enq(Batch.new(Hash.new, STOP_TAG))
       @sender_t.join
       log_info("sender is fully shutted down")
     end # def stop
@@ -93,7 +90,9 @@ module LogStash; module Outputs; class SumoLogic;
     
     private
 
-    def send_request(content)
+    def send_request(batch)
+      content = batch.payload
+      headers = batch.headers
       if content == STOP_TAG
         log_info("STOP_TAG is received.")
         return
@@ -103,10 +102,10 @@ module LogStash; module Outputs; class SumoLogic;
 
       if @stats_enabled && content.start_with?(STATS_TAG)
         body = @compressor.compress(content[STATS_TAG.length..-1])
-        headers = @stats_headers
+        headers[CATEGORY_HEADER] = "#{headers[CATEGORY_HEADER]}.stats"
+        headers[CONTENT_TYPE] = CONTENT_TYPE_CARBON2
       else
         body = @compressor.compress(content)
-        headers = @headers
       end
 
       log_dbg("sending request",
@@ -129,7 +128,7 @@ module LogStash; module Outputs; class SumoLogic;
             :headers => headers,
             :contet => content[0..20])
           if response.code == 429 || response.code == 503 || response.code == 504
-            requeue_message(content)
+            requeue_message(batch)
           end
         else
           log_dbg("request accepted",
@@ -145,22 +144,27 @@ module LogStash; module Outputs; class SumoLogic;
           :message => exception.message,
           :class => exception.class.name,
           :backtrace => exception.backtrace)
-        requeue_message(content)
+        requeue_message(batch)
       end      
 
       @stats.record_request(content.bytesize, body.bytesize)
       request.call
     end # def send_request
 
-    def requeue_message(content)
-      if @stopping.false? && @sleep_before_requeue >= 0
+    def requeue_message(batch)
+      content = batch.payload
+      if @stats_enabled && content.start_with?(STATS_TAG)
+        log_warn("do not requeue stats payload",
+          :content => content)
+      elsif @stopping.false? && @sleep_before_requeue >= 0
         log_info("requeue message",
           :after => @sleep_before_requeue,
           :queue_size => @queue.size,
           :content_size => content.size,
-          :content => content[0..20])
+          :content => content[0..20],
+          :headers => batch.headers)
         Stud.stoppable_sleep(@sleep_before_requeue) { @stopping.true? }
-        @queue.enq(content)
+        @queue.enq(batch)
       end
     end # def reque_message
 
