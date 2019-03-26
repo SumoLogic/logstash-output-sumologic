@@ -5,12 +5,14 @@ require "logstash/outputs/sumologic"
 describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   result = {}
+  event = LogStash::Event.new("foo" => "bar", "message" => "Hello world")
 
   before :each do
-    result = builder.build()
+    result = builder.build(event)
   end
 
   context "should build headers by default" do
+
     let(:builder) { LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234") }
 
     specify {
@@ -41,6 +43,21 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   end # context
 
+  context "should override source_category with template" do
+    
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
+        "url" => "http://localhost/1234",
+        "source_category" => "my source category %{foo}")
+    }
+
+    specify {
+      expect(result.count).to eq(5)
+      expect(result["X-Sumo-Category"]).to eq("my source category bar")
+    }
+
+  end # context
+
   context "should override source_name" do
     
     let(:builder) {
@@ -56,6 +73,21 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   end # context
 
+  context "should override source_name with template" do
+    
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
+        "url" => "http://localhost/1234",
+        "source_name" => "my source name %{foo}")
+    }
+
+    specify {
+      expect(result.count).to eq(5)
+      expect(result["X-Sumo-Name"]).to eq("my source name bar")
+    }
+
+  end # context
+
   context "should override source_host" do
     
     let(:builder) {
@@ -67,6 +99,21 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
     specify {
       expect(result.count).to eq(5)
       expect(result["X-Sumo-Host"]).to eq("my source host")
+    }
+
+  end # context
+
+  context "should override source_host with template" do
+    
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
+        "url" => "http://localhost/1234",
+        "source_host" => "my source host %{foo}")
+    }
+
+    specify {
+      expect(result.count).to eq(5)
+      expect(result["X-Sumo-Host"]).to eq("my source host bar")
     }
 
   end # context
