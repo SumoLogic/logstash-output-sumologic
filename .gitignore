@@ -10,7 +10,6 @@
 bin/*
 coverage
 Gemfile.lock
-<<<<<<< HEAD
 TAGS
 
 # Mac OSX ignores
@@ -21,6 +20,3 @@ TAGS
 
 # idea ignores
 .idea
-=======
-TAGS
->>>>>>> add docker image and docker
