@@ -1,9 +1,9 @@
 # encoding: utf-8
-require "logstash/outputs/sumologic/common"
 
 module LogStash; module Outputs; class SumoLogic;
   class Statistics
 
+    require "logstash/outputs/sumologic/common"
     include LogStash::Outputs::SumoLogic::Common
 
     attr_reader :initialize_time
@@ -11,14 +11,10 @@ module LogStash; module Outputs; class SumoLogic;
     attr_reader :total_input_bytes
     attr_reader :total_metrics_datapoints
     attr_reader :total_log_lines
-    attr_reader :current_pile_items
-    attr_reader :current_pile_bytes
     attr_reader :total_enque_times
     attr_reader :total_enque_bytes
     attr_reader :total_deque_times
     attr_reader :total_deque_bytes
-    attr_reader :current_queue_items
-    attr_reader :current_queue_bytes
     attr_reader :total_output_requests
     attr_reader :total_output_bytes
     attr_reader :total_output_bytes_compressed 
@@ -32,14 +28,10 @@ module LogStash; module Outputs; class SumoLogic;
       @total_input_bytes = Concurrent::AtomicFixnum.new
       @total_metrics_datapoints = Concurrent::AtomicFixnum.new
       @total_log_lines = Concurrent::AtomicFixnum.new
-      @current_pile_items = Concurrent::AtomicFixnum.new
-      @current_pile_bytes = Concurrent::AtomicFixnum.new
       @total_enque_times = Concurrent::AtomicFixnum.new
       @total_enque_bytes = Concurrent::AtomicFixnum.new
       @total_deque_times = Concurrent::AtomicFixnum.new
       @total_deque_bytes = Concurrent::AtomicFixnum.new
-      @current_queue_items = Concurrent::AtomicFixnum.new
-      @current_queue_bytes = Concurrent::AtomicFixnum.new
       @total_output_requests = Concurrent::AtomicFixnum.new
       @total_output_bytes = Concurrent::AtomicFixnum.new
       @total_output_bytes_compressed = Concurrent::AtomicFixnum.new
@@ -53,16 +45,9 @@ module LogStash; module Outputs; class SumoLogic;
       @total_response.get(key) ? @total_response.get(key).value : 0
     end
 
-    def record_multi_input(events, bytesize)
-      @total_input_events.update { |v| v + events }
-      @total_input_bytes.update { |v| v + bytesize }
-    end # def record_multi_input
-
-    def record_input(entry)
+    def record_input(size)
       @total_input_events.increment()
-      @total_input_bytes.update { |v| v + entry.bytesize }
-      @current_pile_items.increment()
-      @current_pile_bytes.update { |v| v + entry.bytesize }
+      @total_input_bytes.update { |v| v + size }
     end # def record_input
 
     def record_log_process()
@@ -73,23 +58,14 @@ module LogStash; module Outputs; class SumoLogic;
       @total_metrics_datapoints.update { |v| v + dps }
     end # def record_metrics_process
 
-    def record_clear_pile()
-      @current_pile_items.value= 0
-      @current_pile_bytes.value= 0
-    end # def record_pile_clear
-
-    def record_enque(payload)
+    def record_enque(size)
       @total_enque_times.increment()
-      @total_enque_bytes.update { |v| v + payload.bytesize }
-      @current_queue_items.increment()
-      @current_queue_bytes.update { |v| v + payload.bytesize }
+      @total_enque_bytes.update { |v| v + size }
     end # def record_enque
 
-    def record_deque(payload)
+    def record_deque(size)
       @total_deque_times.increment()
-      @total_deque_bytes.update { |v| v + payload.bytesize }
-      @current_queue_items.decrement()
-      @current_queue_bytes.update { |v| v - payload.bytesize }
+      @total_deque_bytes.update { |v| v + size }
     end # def record_deque
 
     def record_request(size, size_compressed)

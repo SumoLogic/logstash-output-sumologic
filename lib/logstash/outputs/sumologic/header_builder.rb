@@ -1,26 +1,11 @@
 # encoding: utf-8
-require "socket"
-require "logstash/outputs/sumologic/common"
 
 module LogStash; module Outputs; class SumoLogic;
   class HeaderBuilder
 
+    require "socket"
+    require "logstash/outputs/sumologic/common"
     include LogStash::Outputs::SumoLogic::Common
-
-    CONTENT_TYPE = "Content-Type"
-    CONTENT_TYPE_LOG = "text/plain"
-    CONTENT_TYPE_GRAPHITE = "application/vnd.sumologic.graphite"
-    CONTENT_TYPE_CARBON2 = "application/vnd.sumologic.carbon2"
-    CONTENT_ENCODING = "Content-Encoding"
-
-    CATEGORY_HEADER = "X-Sumo-Category"
-    CATEGORY_HEADER_DEFAULT = "Logstash"
-    HOST_HEADER = "X-Sumo-Host"
-    NAME_HEADER = "X-Sumo-Name"
-    NAME_HEADER_DEFAULT = "logstash-output-sumologic"
-
-    CLIENT_HEADER = "X-Sumo-Client"
-    CLIENT_HEADER_VALUE = "logstash-output-sumologic"
 
     def initialize(config)
       
@@ -36,31 +21,19 @@ module LogStash; module Outputs; class SumoLogic;
 
     end # def initialize
     
-    def build()
-      headers = build_common()
-      headers[CATEGORY_HEADER] = @source_category unless @source_category.blank?
+    def build(event)
+      headers = Hash.new
+      headers.merge!(@extra_headers)
+      headers[CLIENT_HEADER] = CLIENT_HEADER_VALUE
+      headers[CATEGORY_HEADER] = event.sprintf(@source_category) unless @source_category.blank?
+      headers[HOST_HEADER] = event.sprintf(@source_host) unless @source_host.blank?
+      headers[NAME_HEADER] = event.sprintf(@source_name) unless @source_name.blank?
       append_content_header(headers)
+      append_compress_header(headers)
       headers
     end # def build
 
-    def build_stats()
-      headers = build_common()
-      headers[CATEGORY_HEADER] = "#{@source_category}.stats"
-      headers[CONTENT_TYPE] = CONTENT_TYPE_CARBON2
-      headers
-    end # def build_stats
-
     private
-    def build_common()
-      headers = Hash.new()
-      headers.merge!(@extra_headers)
-      headers[CLIENT_HEADER] = CLIENT_HEADER_VALUE
-      headers[HOST_HEADER] = @source_host unless @source_host.blank?
-      headers[NAME_HEADER] = @source_name unless @source_name.blank?
-      append_compress_header(headers)
-      headers
-    end # build_common
-
     def append_content_header(headers)
       contentType = CONTENT_TYPE_LOG
       if @metrics || @fields_as_metrics

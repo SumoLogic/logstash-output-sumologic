@@ -1,11 +1,11 @@
 # encoding: utf-8
-require "logstash/outputs/sumologic/common"
-require "logstash/outputs/sumologic/statistics"
-require "logstash/outputs/sumologic/message_queue"
 
 module LogStash; module Outputs; class SumoLogic;
   class Piler
 
+    require "logstash/outputs/sumologic/common"
+    require "logstash/outputs/sumologic/statistics"
+    require "logstash/outputs/sumologic/message_queue"
     include LogStash::Outputs::SumoLogic::Common
 
     attr_reader :is_pile
@@ -17,14 +17,14 @@ module LogStash; module Outputs; class SumoLogic;
       @queue = queue
       @stats = stats
       @stopping = Concurrent::AtomicBoolean.new(false)
+      @payload_builder = PayloadBuilder.new(@stats, config)
+      @header_builder = HeaderBuilder.new(config)
       @is_pile = (@interval > 0 && @pile_max > 0)
-
       if (@is_pile)
-        @pile = Array.new
-        @pile_size = 0
+        @pile = Hash.new("")
         @semaphore = Mutex.new
       end
-
+  
     end # def initialize
 
     def start()
@@ -46,45 +46,43 @@ module LogStash; module Outputs; class SumoLogic;
     def stop()
       @stopping.make_true()
       if (@is_pile)
-        log_info("shutting down piler...")
-        @piler_t.join
+        log_info("shutting down piler in #{@interval * 2} secs ...")
+        @piler_t.join(@interval * 2)
         log_info("piler is fully shutted down")
       end
     end # def stop
 
-    def input(entry)
+    def input(event)
       if (@stopping.true?)
-        log_warn("piler is shutting down, message dropped", 
-          "message" => entry)
-      elsif (@is_pile)
-        @semaphore.synchronize {
-          if @pile_size + entry.bytesize > @pile_max
-            @queue.enq(@pile.join($/))
-            @pile.clear
-            @pile_size = 0
-            @stats.record_clear_pile()
-          end
-          @pile << entry
-          @pile_size += entry.bytesize
-          @stats.record_input(entry)
-        }
+        log_warn("piler is shutting down, event is dropped", 
+          "event" => event)
       else
-        @queue.enq(entry)
-      end # if
+        headers = @header_builder.build(event)
+        payload = @payload_builder.build(event)
+        if (@is_pile)
+          @semaphore.synchronize {
+            content = @pile[headers]
+            size = content.bytesize
+            if size + payload.bytesize > @pile_max
+              @queue.enq(Batch.new(headers, content))
+              @pile[headers] = ""
+            end
+            @pile[headers] = @pile[headers].blank? ? payload : "#{@pile[headers]}\n#{payload}"
+          }
+        else
+          @queue.enq(Batch.new(headers, payload))
+        end # if
+      end
     end # def input
 
     private
     def enq_and_clear()
-      if (@pile.size > 0)
-        @semaphore.synchronize {
-          if (@pile.size > 0)
-            @queue.enq(@pile.join($/))
-            @pile.clear
-            @pile_size = 0
-            @stats.record_clear_pile()
-          end
-        }
-      end
+      @semaphore.synchronize {
+        @pile.each do |headers, content|
+          @queue.enq(Batch.new(headers, content))
+        end
+        @pile.clear()
+      }
     end # def enq_and_clear
 
   end
