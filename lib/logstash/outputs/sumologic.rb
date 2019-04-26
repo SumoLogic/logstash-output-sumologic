@@ -111,6 +111,9 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # Sending throughput data points every (x) seconds
   config :stats_interval, :validate => :number, :default => 60
 
+  # Disable cookies by default (used in HTTP mixin)
+  config :cookies, :validate => :boolean, :default => false
+
   attr_reader :stats
   
   def register

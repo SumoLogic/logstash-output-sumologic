@@ -13,6 +13,16 @@ describe LogStash::Outputs::SumoLogic, :unless => (ENV["sumo_url"].to_s.empty?) 
     plugin.close()
   end
 
+  context "default configuration" do
+    let(:plugin) {
+      LogStash::Outputs::SumoLogic.new("url" => ENV["sumo_url"])
+    }
+    
+    it "cookies is by default disabled" do
+      expect(plugin.cookies).to be false
+    end
+  end
+  
   context "no pile" do
     context "single sender" do
       context "send log in json" do
