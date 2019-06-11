@@ -1,0 +1,6 @@
+pipeline:
+  batch:
+    size: ${BATCH_SIZE:125}
+    delay: ${BATCH_DELAY:50}
+path:
+   queue: "/tmp/${QUEUE_DIR:queue}"

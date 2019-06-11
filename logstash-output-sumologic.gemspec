@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name          = 'logstash-output-sumologic'
-  s.version       = '1.2.2'
+  s.version       = '0.0.0'
   s.licenses      = ['Apache-2.0']
   s.summary       = 'Deliever the log to Sumo Logic cloud service.'
   s.description   = 'This gem is a Logstash output plugin to deliver the log or metrics to Sumo Logic cloud service. Go to https://github.com/SumoLogic/logstash-output-sumologic for getting help, reporting issues, etc.'
@@ -20,8 +20,8 @@ Gem::Specification.new do |s|
   # Gem dependencies
   s.add_runtime_dependency 'manticore', '>= 0.5.4', '< 1.0.0'
   s.add_runtime_dependency 'logstash-core-plugin-api', '>= 1.60', '<= 2.99'
-  s.add_runtime_dependency 'logstash-codec-plain'
-  s.add_runtime_dependency 'logstash-mixin-http_client'
+  s.add_runtime_dependency 'logstash-mixin-http_client', '~> 6.0'
   
+  s.add_development_dependency 'logstash-codec-plain'
   s.add_development_dependency 'logstash-devutils'
 end
