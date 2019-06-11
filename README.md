@@ -1,6 +1,6 @@
 # Logstash Sumo Logic Output Plugin
 
-[![Build Status](https://travis-ci.org/SumoLogic/logstash-output-sumologic.svg?branch=master)](https://travis-ci.org/SumoLogic/logstash-output-sumologic)  [![Gem Version](https://badge.fury.io/rb/logstash-output-sumologic.svg)](https://badge.fury.io/rb/logstash-output-sumologic)
+[![Build Status](https://travis-ci.org/SumoLogic/logstash-output-sumologic.svg?branch=master)](https://travis-ci.org/SumoLogic/logstash-output-sumologic)  [![Gem Version](https://badge.fury.io/rb/logstash-output-sumologic.svg)](https://badge.fury.io/rb/logstash-output-sumologic)  [![Docker Pulls](https://img.shields.io/docker/pulls/sumologic/logstash-output-sumologic.svg)](https://hub.docker.com/r/sumologic/logstash-output-sumologic)
 
 This is an output plugin for [Logstash](https://github.com/elastic/logstash).
 It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
