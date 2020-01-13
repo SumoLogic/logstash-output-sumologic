@@ -3,6 +3,7 @@
 echo "Starting build process in: `pwd`"
 set -e
 
+VERSION_IN_GEMSPEC=`cat logstash-output-sumologic.gemspec | grep "s.version" | cut -d= -f2 | tr -d '[:space:]'`
 VERSION="${TRAVIS_TAG:-0.0.0}"
 VERSION="${VERSION#v}"
 : "${DOCKER_TAG:=sumologic/logstash-output-sumologic}"
@@ -10,8 +11,10 @@ VERSION="${VERSION#v}"
 PLUGIN_NAME="logstash-output-sumologic"
 
 echo "Building for tag $VERSION, modify .gemspec file..."
-sed -i.bak "s/0.0.0/$VERSION/g" ./$PLUGIN_NAME.gemspec
+sed -i.bak "s/$VERSION_IN_GEMSPEC/$VERSION/g" ./$PLUGIN_NAME.gemspec
 rm -f ./$PLUGIN_NAME.gemspec.bak
+
+exit 1
 
 echo "Install bundler..."
 bundle install
