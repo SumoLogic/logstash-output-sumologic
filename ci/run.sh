@@ -14,8 +14,6 @@ echo "Building for tag $VERSION, modify .gemspec file..."
 sed -i.bak "s/$VERSION_IN_GEMSPEC/$VERSION/g" ./$PLUGIN_NAME.gemspec
 rm -f ./$PLUGIN_NAME.gemspec.bak
 
-exit 1
-
 echo "Install bundler..."
 bundle install
 
