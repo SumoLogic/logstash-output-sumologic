@@ -1,5 +1,15 @@
 # Change Log
 
+## 1.2.3
+- #36
+  - Update sender to send in batch.
+  - Support %{} field evaluation in `source_category`, `source_name`, `source_host` parameters
+- #39 Disable cookies by default
+- #41
+  - Provide Docker image with Logstash 6.6 + output plugin on docker hub
+  - Kubernetes support with Logstash beats to SumoLogic
+  - CI improving
+
 ## 1.2.2
 
 - Bug fix: memory leak when using `%{@json}` in format
