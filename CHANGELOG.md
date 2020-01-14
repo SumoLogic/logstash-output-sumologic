@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.3.0
+- [#41](https://github.com/SumoLogic/logstash-output-sumologic/pull/41) Provide Docker image with Logstash 6.6 + output plugin on docker hub
+- [#41](https://github.com/SumoLogic/logstash-output-sumologic/pull/41) Kubernetes support with Logstash beats to SumoLogic
+- [#41](https://github.com/SumoLogic/logstash-output-sumologic/pull/41) CI improving 
+- [#36](https://github.com/SumoLogic/logstash-output-sumologic/pull/36) Update sender to send in batch.
+- [#36](https://github.com/SumoLogic/logstash-output-sumologic/pull/36) Support %{} field evaluation in `source_category`, `source_name`, `source_host` parameters
+- [#39](https://github.com/SumoLogic/logstash-output-sumologic/pull/39) Disable cookies by default
+
 ## 1.2.2
 
 - Bug fix: memory leak when using `%{@json}` in format
