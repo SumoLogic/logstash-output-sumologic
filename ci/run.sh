@@ -11,7 +11,7 @@ VERSION="${VERSION#v}"
 PLUGIN_NAME="logstash-output-sumologic"
 
 echo "Building for tag $VERSION, modify .gemspec file..."
-sed -i.bak "s/$VERSION_IN_GEMSPEC/$VERSION/g" ./$PLUGIN_NAME.gemspec
+sed -i.bak "s/$VERSION_IN_GEMSPEC/'$VERSION'/g" ./$PLUGIN_NAME.gemspec
 rm -f ./$PLUGIN_NAME.gemspec.bak
 
 echo "Install bundler..."
