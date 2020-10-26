@@ -26,6 +26,15 @@ bin/logstash-plugin install <full path of .gem>
 
 ## How to run test with rspec
 
+### Running in Docker
+
+```bash
+docker build -t logstash-output-plugin .
+docker run --rm -it logstash-output-plugin
+```
+
+### Running on bare metal
+
 The test requires JRuby to run. So you need to install [JRuby](http://jruby.org/), [bundle](https://bundler.io/bundle_install.html) and [RVM](https://rvm.io/) (for switching between JRuby and Ruby) first.
 And then run:
 
