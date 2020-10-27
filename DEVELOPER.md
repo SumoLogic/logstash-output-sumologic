@@ -30,7 +30,7 @@ bin/logstash-plugin install <full path of .gem>
 
 ```bash
 docker build -t logstash-output-plugin .
-docker run --rm -it logstash-output-plugin
+docker run --rm -it -e 'sumo_url=https://events.sumologic.net/receiver/v1/http/XXXXXXXXXX' logstash-output-plugin
 ```
 
 ### Running on bare metal
