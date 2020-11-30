@@ -10,7 +10,7 @@ Download the latest plugin's release into current directory.
 curl -s https://api.github.com/repos/SumoLogic/logstash-output-sumologic/releases/latest |
   grep browser_download_url |
   cut -d '"' -f 4 |
-  wget -qi -
+  xargs curl --remote-name --silent
 ```
 
 The above command should download a file `logstash-output-sumologic-<version>.gem` into current directory.
