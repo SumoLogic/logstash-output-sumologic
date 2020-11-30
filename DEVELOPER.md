@@ -45,4 +45,5 @@ export sumo_url=https://events.sumologic.net/receiver/v1/http/XXXXXXXXXX
 rspec spec/
 ```
 
-The project is integrated to the Travis CI now. Make sure [all test passed](https://travis-ci.org/SumoLogic/logstash-output-sumologic) before creating PR
+The project is integrated to Travis CI now.
+Make sure [all test passed](https://travis-ci.com/SumoLogic/logstash-output-sumologic) before creating PR
