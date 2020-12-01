@@ -9,7 +9,6 @@
 .rvmrc
 bin/*
 coverage
-Gemfile.lock
 TAGS
 
 # Mac OSX ignores
