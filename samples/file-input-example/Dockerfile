@@ -1,4 +1,4 @@
-FROM docker.elastic.co/logstash/logstash-oss:6.8.13
+FROM docker.elastic.co/logstash/logstash-oss:7.9.3
 USER root
 
 COPY logstash-output-sumologic-*.gem ./
