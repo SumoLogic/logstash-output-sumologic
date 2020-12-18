@@ -67,7 +67,7 @@ module LogStash; module Outputs; class SumoLogic;
               @queue.enq(Batch.new(headers, content))
               @pile[headers] = ""
             end
-            @pile[headers] = @pile[headers].blank? ? payload : "#{@pile[headers]}\n#{payload}"
+            @pile[headers] = blank?(@pile[headers]) ? payload : "#{@pile[headers]}\n#{payload}"
           }
         else
           @queue.enq(Batch.new(headers, payload))
