@@ -1,6 +1,12 @@
 # Change Log
 
+## 1.3.1 (2020-12-18)
+
+- [#53](https://github.com/SumoLogic/logstash-output-sumologic/pull/53) Fix "undefined method `blank?'"
+- [#52](https://github.com/SumoLogic/logstash-output-sumologic/pull/52) Fix logstash-plugin-http_client version conflict in Logstash 7
+
 ## 1.3.0
+
 - [#41](https://github.com/SumoLogic/logstash-output-sumologic/pull/41) Provide Docker image with Logstash 6.6 + output plugin on docker hub
 - [#41](https://github.com/SumoLogic/logstash-output-sumologic/pull/41) Kubernetes support with Logstash beats to SumoLogic
 - [#41](https://github.com/SumoLogic/logstash-output-sumologic/pull/41) CI improving 
