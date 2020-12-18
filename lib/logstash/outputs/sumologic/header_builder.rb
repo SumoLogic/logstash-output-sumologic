@@ -25,9 +25,9 @@ module LogStash; module Outputs; class SumoLogic;
       headers = Hash.new
       headers.merge!(@extra_headers)
       headers[CLIENT_HEADER] = CLIENT_HEADER_VALUE
-      headers[CATEGORY_HEADER] = event.sprintf(@source_category) unless @source_category.blank?
-      headers[HOST_HEADER] = event.sprintf(@source_host) unless @source_host.blank?
-      headers[NAME_HEADER] = event.sprintf(@source_name) unless @source_name.blank?
+      headers[CATEGORY_HEADER] = event.sprintf(@source_category) unless blank?(@source_category)
+      headers[HOST_HEADER] = event.sprintf(@source_host) unless blank?(@source_host)
+      headers[NAME_HEADER] = event.sprintf(@source_name) unless blank?(@source_name)
       append_content_header(headers)
       append_compress_header(headers)
       headers
