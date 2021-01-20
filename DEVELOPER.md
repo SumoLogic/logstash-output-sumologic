@@ -35,8 +35,7 @@ docker run --rm -it -e 'sumo_url=https://events.sumologic.net/receiver/v1/http/X
 
 ### Running on bare metal
 
-The test requires JRuby to run. So you need to install [JRuby](http://jruby.org/), [bundle](https://bundler.io/bundle_install.html) and [RVM](https://rvm.io/) (for switching between JRuby and Ruby) first.
-And then run:
+The test requires JRuby to run.
 
 ```bash
 rvm use jruby
@@ -52,4 +51,5 @@ The project uses GitHub Actions for:
 - Testing pull requests and main branch commits: [.github/workflows/ci.yml](.github/workflows/ci.yml)
 - Publishing new version of gem to RubyGems.org after tagging: [.github/workflows/publish.yml](.github/workflows/publish.yml)
 
-Before publishing a new version, make sure the RubyGems account has MFA disabled for API access. Go to [Settings](https://rubygems.org/settings/edit) and set `MFA Level` to `UI only`. RubyGems credentials are stored in 1Password's `K8s Collection vault`.
+Before publishing a new version, make sure the RubyGems account has MFA disabled for API access.
+Go to [Settings](https://rubygems.org/settings/edit) and set `MFA Level` to `UI only`.
