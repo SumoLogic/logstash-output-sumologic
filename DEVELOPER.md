@@ -35,8 +35,7 @@ docker run --rm -it -e 'sumo_url=https://events.sumologic.net/receiver/v1/http/X
 
 ### Running on bare metal
 
-The test requires JRuby to run. So you need to install [JRuby](http://jruby.org/), [bundle](https://bundler.io/bundle_install.html) and [RVM](https://rvm.io/) (for switching between JRuby and Ruby) first.
-And then run:
+The test requires JRuby to run.
 
 ```bash
 rvm use jruby
@@ -45,5 +44,12 @@ export sumo_url=https://events.sumologic.net/receiver/v1/http/XXXXXXXXXX
 rspec spec/
 ```
 
-The project is integrated to Travis CI now.
-Make sure [all test passed](https://travis-ci.com/SumoLogic/logstash-output-sumologic) before creating PR
+## Continuous Integration
+
+The project uses GitHub Actions for:
+
+- Testing pull requests and main branch commits: [.github/workflows/ci.yml](.github/workflows/ci.yml)
+- Publishing new version of gem to RubyGems.org after tagging: [.github/workflows/publish.yml](.github/workflows/publish.yml)
+
+Before publishing a new version, make sure the RubyGems account has MFA disabled for API access.
+Go to [Settings](https://rubygems.org/settings/edit) and set `MFA Level` to `UI only`.
