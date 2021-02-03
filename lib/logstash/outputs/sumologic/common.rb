@@ -22,6 +22,7 @@ module LogStash; module Outputs; class SumoLogic;
 
     CATEGORY_HEADER = "X-Sumo-Category"
     CATEGORY_HEADER_DEFAULT = "Logstash"
+    CATEGORY_HEADER_DEFAULT_STATS = "Logstash.stats"
     HOST_HEADER = "X-Sumo-Host"
     NAME_HEADER = "X-Sumo-Name"
     NAME_HEADER_DEFAULT = "logstash-output-sumologic"

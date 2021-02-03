@@ -241,4 +241,90 @@ describe LogStash::Outputs::SumoLogic::HeaderBuilder do
 
   end # context
 
+  context "should build headers for stats" do
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234")
+    }
+
+    specify {
+      stats_result = builder.build_stats()
+      expected = {
+        "X-Sumo-Client" => "logstash-output-sumologic",
+        "X-Sumo-Name" => "logstash-output-sumologic",
+        "X-Sumo-Host" => Socket.gethostname,
+        "X-Sumo-Category" => "Logstash.stats",
+        "Content-Type" => "application/vnd.sumologic.carbon2"
+      }
+      expect(stats_result).to eq(expected)
+    }
+  end
+
+  context "should build headers for stats with overridden source category" do
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234", "stats_category" => "custom")
+    }
+
+    specify {
+      stats_result = builder.build_stats()
+      expect(stats_result["X-Sumo-Category"]).to eq("custom")
+    }
+  end
+
+  context "should build headers for stats with compression" do
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new("url" => "http://localhost/1234", "compress" => true, "compress_encoding" => "gzip")
+    }
+
+    specify {
+      stats_result = builder.build_stats()
+      expect(stats_result["Content-Encoding"]).to eq("gzip")
+    }
+  end
+
+  context "should build headers for stats with extra_headers" do
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
+        "url" => "http://localhost/1234",
+        "extra_headers" => {
+          "foo" => "bar"
+        })
+    }
+
+    specify {
+      stats_result = builder.build_stats()
+      expect(stats_result.count).to eq(6)
+      expect(stats_result["foo"]).to eq("bar")
+    }
+  end
+
+  context "should build headers for stats with extra_headers but never overwrite pre-defined headers" do
+    
+    let(:builder) {
+      LogStash::Outputs::SumoLogic::HeaderBuilder.new(
+        "url" => "http://localhost/1234",
+        "extra_headers" => {
+          "foo" => "bar",
+          "X-Sumo-Client" => "a",
+          "X-Sumo-Name" => "b",
+          "X-Sumo-Host" => "c",
+          "X-Sumo-Category" => "d",
+          "Content-Type" => "e"
+      })
+    }
+
+    specify {
+      stats_result = builder.build_stats()
+      expected = {
+        "foo" => "bar",
+        "X-Sumo-Client" => "logstash-output-sumologic",
+        "X-Sumo-Name" => "logstash-output-sumologic",
+        "X-Sumo-Host" => Socket.gethostname,
+        "X-Sumo-Category" => "Logstash.stats",
+        "Content-Type" => "application/vnd.sumologic.carbon2"
+      }
+      expect(stats_result).to eq(expected)
+    }
+
+  end # context
+
 end # describe

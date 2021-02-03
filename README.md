@@ -112,6 +112,7 @@ Logon to Sumo Logic [web app](https://service.sumologic.com/) and run
 | `fields_include`       | array   | No        | all fields    | Working with `fields_as_metrics` parameter, only the fields which full name matching these RegEx pattern(s) will be included in metrics.
 | `fields_exclude`       | array   | No        | none          | Working with `fields_as_metrics` parameter, the fields which full name matching these RegEx pattern(s) will be ignored in metrics.
 | `sleep_before_requeue` | number  | No        | `30`          | The message failed to send to server will be retried after (x) seconds. Not retried if negative number set
+| `stats_category`       | string  | No        | `Logstash.stats` | The source category this plugin's stats will be sent with when `stats_enabled` is `true`
 | `stats_enabled`        | boolean | No        | `false`       | If `true`, stats of this plugin will be sent as metrics
 | `stats_interval`       | number  | No        | `60`          | The stats will be sent every (x) seconds
 
@@ -136,7 +137,7 @@ On the other side, this version is marked as thread safe so if necessary, multip
 
 ### Monitor throughput in metrics
 
-If your Sumo Logic account supports metrics feature, you can enable the stats monitor of this plugin with configuring `stats_enabled` to `true`. For every `stats_interval` seconds, a batch of metrics data points will be sent to Sumo Logic with source category `XXX.stats` (`XXX` is the source category of main output):
+If your Sumo Logic account supports metrics feature, you can enable the stats monitor of this plugin with configuring `stats_enabled` to `true`. For every `stats_interval` seconds, a batch of metrics data points will be sent to Sumo Logic with source category specified by `stats_category` parameter:
 
 | Metric                          | Description                                                 |
 | ------------------------------- | ----------------------------------------------------------- |

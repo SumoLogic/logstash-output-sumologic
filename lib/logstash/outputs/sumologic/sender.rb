@@ -102,8 +102,6 @@ module LogStash; module Outputs; class SumoLogic;
 
       if @stats_enabled && content.start_with?(STATS_TAG)
         body = @compressor.compress(content[STATS_TAG.length..-1])
-        headers[CATEGORY_HEADER] = "#{headers[CATEGORY_HEADER]}.stats"
-        headers[CONTENT_TYPE] = CONTENT_TYPE_CARBON2
       else
         body = @compressor.compress(content)
       end

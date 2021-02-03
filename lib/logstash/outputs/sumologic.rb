@@ -105,6 +105,8 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # For messages fail to send or get 429/503/504 response, try to resend after (x) seconds; don't resend if (x) < 0
   config :sleep_before_requeue, :validate => :number, :default => 30
 
+  config :stats_category, :validate => :string, :default => CATEGORY_HEADER_DEFAULT_STATS
+
   # Sending throughput data as metrics
   config :stats_enabled, :validate => :boolean, :default => false
 
