@@ -1,6 +1,10 @@
 # Developer Container
 
-Logstash has many dependencies/versions, and the developing/building behavior is not consistent on different platforms (like on Mac or Linux). This container is provided as a cross-platform developer environment in Docker container (It pre-install jruby/logstash/github and clone the latest master branch of plugin locally). With this environment, you can build/test your private version of plugin easier.
+Logstash has many dependencies/versions,
+and the developing/building behavior is not consistent on different platforms (like on Mac or Linux).
+This container is provided as a cross-platform development environment in Docker container.
+It pre-installs jruby, logstash, git and clones the latest main branch of plugin locally.
+With this environment, you can build, test and run your local version of plugin with ease.
 
 ## Build Docker Image
 
