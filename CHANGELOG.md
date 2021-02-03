@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.3.2 (2021-02-03)
+
+- [#60](https://github.com/SumoLogic/logstash-output-sumologic/pull/60) Fix plugin metrics not being sent
+
 ## 1.3.1 (2020-12-18)
 
 - [#53](https://github.com/SumoLogic/logstash-output-sumologic/pull/53) Fix "undefined method `blank?'"
