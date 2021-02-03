@@ -1,4 +1,4 @@
-FROM jruby:9.1.16.0-jdk
+FROM jruby:9.2.14.0-jdk
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -12,7 +12,7 @@ RUN wget https://packages.elastic.co/GPG-KEY-elasticsearch -qO /tmp/GPG-KEY-elas
     apt-key add /tmp/GPG-KEY-elasticsearch.key && \
     rm -f /tmp/GPG-KEY-elasticsearch.key
 
-RUN echo 'deb https://artifacts.elastic.co/packages/6.x/apt stable main' | tee -a /etc/apt/sources.list.d/elastic-6.x.list
+RUN echo 'deb https://artifacts.elastic.co/packages/7.x/apt stable main' | tee -a /etc/apt/sources.list.d/elastic-7.x.list
 
 RUN apt-get update && apt-get install logstash
 
