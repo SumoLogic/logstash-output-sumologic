@@ -14,6 +14,7 @@ module LogStash; module Outputs; class SumoLogic;
       @queue = queue
       @stats = stats
       @stopping = Concurrent::AtomicBoolean.new(false)
+      @header_builder = HeaderBuilder.new(config)
 
       @enabled = config["stats_enabled"] ||= false
       @interval = config["stats_interval"] ||= 60
@@ -27,8 +28,8 @@ module LogStash; module Outputs; class SumoLogic;
         @monitor_t = Thread.new { 
           while @stopping.false?
             Stud.stoppable_sleep(@interval) { @stopping.true? }
-            if @stats.total_input_events.value > 0
-              @queue.enq(build_stats_payload())
+            if @stats.total_log_lines.value > 0 || @stats.total_metrics_datapoints.value > 0
+              @queue.enq(Batch.new(@header_builder.build_stats(), build_stats_payload()))
             end
           end # while
         }
@@ -73,4 +74,4 @@ module LogStash; module Outputs; class SumoLogic;
     end # def build_metric_line
 
   end
-end; end; end        
+end; end; end
