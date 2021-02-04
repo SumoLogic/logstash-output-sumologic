@@ -29,7 +29,7 @@ module LogStash; module Outputs; class SumoLogic;
           while @stopping.false?
             Stud.stoppable_sleep(@interval) { @stopping.true? }
             if @stats.total_log_lines.value > 0 || @stats.total_metrics_datapoints.value > 0
-              @queue.enq(Batch.new(@header_builder.build_stats(), build_stats_payload()))
+              @queue.enq(Batch.new(headers(), build_stats_payload()))
             end
           end # while
         }
@@ -72,6 +72,10 @@ module LogStash; module Outputs; class SumoLogic;
     def build_metric_line(key, value, timestamp)
       "metric=#{key} interval=#{@interval}  category=monitor #{value} #{timestamp}"
     end # def build_metric_line
+
+    def headers()
+      @headers ||= @header_builder.build_stats()
+    end
 
   end
 end; end; end
