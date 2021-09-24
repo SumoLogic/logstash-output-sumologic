@@ -125,7 +125,7 @@ module LogStash; module Outputs; class SumoLogic;
             :code => response.code,
             :headers => headers,
             :contet => content[0..20])
-          if response.code == 429 || response.code == 503 || response.code == 504
+          if response.code == 429 || response.code == 502 || response.code == 503 || response.code == 504
             requeue_message(batch)
           end
         else

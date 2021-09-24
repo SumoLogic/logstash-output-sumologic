@@ -102,7 +102,7 @@ class LogStash::Outputs::SumoLogic < LogStash::Outputs::Base
   # For carbon2 metrics format only, define the meta tags (which will NOT be used to identify the metrics)
   config :meta_tags, :validate => :hash, :default => {}
   
-  # For messages fail to send or get 429/503/504 response, try to resend after (x) seconds; don't resend if (x) < 0
+  # For messages fail to send or get 429/502/503/504 response, try to resend after (x) seconds; don't resend if (x) < 0
   config :sleep_before_requeue, :validate => :number, :default => 30
 
   config :stats_category, :validate => :string, :default => CATEGORY_HEADER_DEFAULT_STATS
