@@ -21,7 +21,7 @@ Vagrant.configure('2') do |config|
     vb.name = 'logstash-output-sumologic'
   end
 
-  config.vm.provision 'shell', path: 'vagrant/provision.sh'
+  config.vm.provision 'shell', path: 'vagrant/provision.sh', privileged: false
 
   config.vm.synced_folder ".", "/sumologic"
 end
