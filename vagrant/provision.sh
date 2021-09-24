@@ -3,25 +3,39 @@
 set -x
 
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get --yes upgrade
-apt-get --yes install apt-transport-https
+sudo apt-get update
+sudo apt-get --yes upgrade
 
-echo "export EDITOR=vim" >> /home/vagrant/.bashrc
+echo "export EDITOR=vim" >> ~/.bashrc
 
-# Install docker
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
-apt-get install -y docker-ce docker-ce-cli containerd.io
+# Install Docker
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo \
+  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 usermod -aG docker vagrant
 
-# Install make
-apt-get install -y make
+# Install build essentials
+sudo apt-get install --yes build-essential
 
-# install requirements for ruby
-snap install ruby --channel=2.6/stable --classic
-su vagrant -c 'gem install bundler:2.1.4'
-apt install -y gcc g++ libsnappy-dev libicu-dev zlib1g-dev cmake pkg-config libssl-dev
+# Install rbenv https://github.com/rbenv/rbenv#installation
+git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+cd ~/.rbenv && src/configure && make -C src
+echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(rbenv init - bash)"' >> ~/.bashrc
+# Install rbenv-build plugin for `rbenv install` command https://github.com/rbenv/ruby-build#installation
+export PATH="$HOME/.rbenv/bin:$PATH"
+eval "$(rbenv init - bash)"
+mkdir -p "$(rbenv root)"/plugins
+git clone https://github.com/rbenv/ruby-build.git "$(rbenv root)"/plugins/ruby-build
+
+# Install Java SE as a prerequisite for JRuby.
+# Use the same version as in Logstash Dockerfile https://github.com/elastic/logstash/blob/37e1db0c129c03cfd7b724775d26a06eb5a1fe39/Dockerfile#L5.
+sudo apt install --yes openjdk-11-jdk-headless
+
+# Install JRuby and Bundler.
+cd /sumologic
+rbenv install
+gem install bundler
