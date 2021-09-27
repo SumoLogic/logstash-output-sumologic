@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.4.0 (2021-09-27)
+
+- [#68](https://github.com/SumoLogic/logstash-output-sumologic/pull/68) feat: retry on 502 error code
+
 ## 1.3.2 (2021-02-03)
 
 - [#60](https://github.com/SumoLogic/logstash-output-sumologic/pull/60) Fix plugin metrics not being sent
