@@ -39,3 +39,12 @@ cd /sumologic
 ```
 
 The `/sumologic` directory in Vagrant is mapped to this repository's root directory on the host.
+
+## Run plugin
+
+To run plugin, you simply need to SSH into the machine and run the following snippet:
+
+```bash
+cd /sumologic/vagrant
+make run
+```

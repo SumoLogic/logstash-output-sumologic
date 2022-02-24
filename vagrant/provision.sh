@@ -17,6 +17,10 @@ sudo apt update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 usermod -aG docker vagrant
 
+# start receiver-mock
+sudo docker create -p 3000:3000 --name receiver-mock --restart=always sumologic/kubernetes-tools receiver-mock --print-headers
+sudo docker start receiver-mock
+
 # Install build essentials
 sudo apt-get install --yes build-essential
 
@@ -35,7 +39,16 @@ git clone https://github.com/rbenv/ruby-build.git "$(rbenv root)"/plugins/ruby-b
 # Use the same version as in Logstash Dockerfile https://github.com/elastic/logstash/blob/37e1db0c129c03cfd7b724775d26a06eb5a1fe39/Dockerfile#L5.
 sudo apt install --yes openjdk-11-jdk-headless
 
+# Install logstash
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+sudo apt-get install apt-transport-https
+echo "deb https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-8.x.list
+sudo apt-get update && sudo apt-get install -y logstash
+
+
 # Install JRuby and Bundler.
 cd /sumologic
 rbenv install
 gem install bundler
+
+bundle install
