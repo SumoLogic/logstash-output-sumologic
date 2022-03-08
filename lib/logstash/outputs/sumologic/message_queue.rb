@@ -27,8 +27,8 @@ module LogStash; module Outputs; class SumoLogic;
         end
     end # def enq
 
-    def deq()
-      batch = @queue.deq()
+    def deq(non_block: false)
+      batch = @queue.deq(non_block: non_block)
       batch_size = batch.payload.bytesize
       @stats.record_deque(batch_size)
       @queue_bytesize.update { |v| v - batch_size }

@@ -24,6 +24,7 @@ module LogStash; module Outputs; class SumoLogic;
       @sender_max = (config["sender_max"] ||= 1) < 1 ? 1 : config["sender_max"]
       @sleep_before_requeue = config["sleep_before_requeue"] ||= 30
       @stats_enabled = config["stats_enabled"] ||= false
+      @iteration_sleep = 0.3
 
       @tokens = SizedQueue.new(@sender_max)
       @sender_max.times { |t| @tokens << t }
@@ -47,11 +48,17 @@ module LogStash; module Outputs; class SumoLogic;
             batch = @resend_queue.deq(non_block: true)
           rescue
             # send new batch otherwise
-            batch = @queue.deq()
+            begin
+              batch = @queue.deq(non_block: true)
+            rescue
+              Stud.stoppable_sleep(@iteration_sleep) { @stopping.true? }
+              next
+            end
           end
           send_request(batch)
         end # while
-        @resend_queue.drain().map { |batch| 
+        @resend_queue.size.times.map { |queue|
+          batch = queue.deq()
           send_request(batch)
         }
         @queue.drain().map { |batch| 
@@ -173,7 +180,6 @@ module LogStash; module Outputs; class SumoLogic;
           :content => content)
       elsif @stopping.false? && @sleep_before_requeue >= 0
         log_info("requeue message",
-          :token => token,
           :after => @sleep_before_requeue,
           :queue_size => @queue.size,
           :content_size => content.size,
