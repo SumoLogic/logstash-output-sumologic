@@ -28,6 +28,9 @@ module LogStash; module Outputs; class SumoLogic;
       @tokens = SizedQueue.new(@sender_max)
       @sender_max.times { |t| @tokens << t }
 
+      # Make resend_queue twice as big as sender_max,
+      # because if one batch is processed, the next one is already waiting in the thread
+      @resend_queue = SizedQueue.new(2*@sender_max)
       @compressor = LogStash::Outputs::SumoLogic::Compressor.new(config)
 
     end # def initialize
@@ -39,9 +42,18 @@ module LogStash; module Outputs; class SumoLogic;
       @stopping.make_false()
       @sender_t = Thread.new {
         while @stopping.false?
-          batch = @queue.deq()
+          begin
+            # Resend batch if any in the queue
+            batch = @resend_queue.deq(non_block: true)
+          rescue
+            # send new batch otherwise
+            batch = @queue.deq()
+          end
           send_request(batch)
         end # while
+        @resend_queue.drain().map { |batch| 
+          send_request(batch)
+        }
         @queue.drain().map { |batch| 
           send_request(batch)
         }
@@ -98,6 +110,7 @@ module LogStash; module Outputs; class SumoLogic;
         return
       end
       
+      # wait for token so we do not exceed number of request in background
       token = @tokens.pop()
 
       if @stats_enabled && content.start_with?(STATS_TAG)
@@ -111,11 +124,9 @@ module LogStash; module Outputs; class SumoLogic;
         :content_size => content.size,
         :content => content[0..20],
         :payload_size => body.size)
+
+      # send request in background
       request = @client.send(:background).send(:post, @url, :body => body, :headers => headers)
-      
-      request.on_complete do
-        @tokens << token
-      end
   
       request.on_success do |response|
         @stats.record_response_success(response.code)
@@ -126,12 +137,16 @@ module LogStash; module Outputs; class SumoLogic;
             :headers => headers,
             :contet => content[0..20])
           if response.code == 429 || response.code == 502 || response.code == 503 || response.code == 504
+            # requeue and release token
             requeue_message(batch)
+            @tokens << token
           end
         else
           log_dbg("request accepted",
             :token => token,
             :code => response.code)
+          # release token
+          @tokens << token
         end
       end
   
@@ -143,6 +158,8 @@ module LogStash; module Outputs; class SumoLogic;
           :class => exception.class.name,
           :backtrace => exception.backtrace)
         requeue_message(batch)
+        # requeue and release token
+        @tokens << token
       end      
 
       @stats.record_request(content.bytesize, body.bytesize)
@@ -156,13 +173,14 @@ module LogStash; module Outputs; class SumoLogic;
           :content => content)
       elsif @stopping.false? && @sleep_before_requeue >= 0
         log_info("requeue message",
+          :token => token,
           :after => @sleep_before_requeue,
           :queue_size => @queue.size,
           :content_size => content.size,
           :content => content[0..20],
           :headers => batch.headers)
         Stud.stoppable_sleep(@sleep_before_requeue) { @stopping.true? }
-        @queue.enq(batch)
+        @resend_queue.enq(batch)
       end
     end # def reque_message
 
