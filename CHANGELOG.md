@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.4.1 (2022-03-09)
+
+- [#73](https://github.com/SumoLogic/logstash-output-sumologic/pull/73) fix: remove deadlock possibility by adding resend_queue queue
+
 ## 1.4.0 (2021-09-27)
 
 - [#68](https://github.com/SumoLogic/logstash-output-sumologic/pull/68) feat: retry on 502 error code
