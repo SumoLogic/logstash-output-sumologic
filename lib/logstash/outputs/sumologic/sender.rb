@@ -46,7 +46,7 @@ module LogStash; module Outputs; class SumoLogic;
           begin
             # Resend batch if any in the queue
             batch = @resend_queue.deq(non_block: true)
-          rescue
+          rescue ThreadError
             # send new batch otherwise
             begin
               batch = @queue.deq(non_block: true)
