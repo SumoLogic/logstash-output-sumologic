@@ -50,7 +50,7 @@ module LogStash; module Outputs; class SumoLogic;
             # send new batch otherwise
             begin
               batch = @queue.deq(non_block: true)
-            rescue
+            rescue ThreadError
               Stud.stoppable_sleep(@iteration_sleep) { @stopping.true? }
               next
             end
