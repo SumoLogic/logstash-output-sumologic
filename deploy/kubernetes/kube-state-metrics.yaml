@@ -38,7 +38,7 @@ spec:
           initialDelaySeconds: 5
           timeoutSeconds: 5
       - name: addon-resizer
-        image: k8s.gcr.io/addon-resizer:1.8.3
+        image: registry.k8s.io/addon-resizer:1.8.3
         resources:
           limits:
             cpu: 150m
