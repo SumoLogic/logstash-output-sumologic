@@ -3,6 +3,8 @@
 set -x
 
 export DEBIAN_FRONTEND=noninteractive
+ARCH="$(dpkg --print-architecture)"
+
 sudo apt-get update
 sudo apt-get --yes upgrade
 
@@ -11,11 +13,11 @@ echo "export EDITOR=vim" >> ~/.bashrc
 # Install Docker
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo \
-  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  "deb [arch=${ARCH} signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-usermod -aG docker vagrant
+sudo usermod -aG docker vagrant
 
 # start receiver-mock
 sudo docker create -p 3000:3000 --name receiver-mock --restart=always sumologic/kubernetes-tools receiver-mock --print-headers
