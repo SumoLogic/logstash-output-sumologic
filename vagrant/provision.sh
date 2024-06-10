@@ -20,7 +20,7 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 sudo usermod -aG docker vagrant
 
 # start receiver-mock
-sudo docker create -p 3000:3000 --name receiver-mock --restart=always sumologic/kubernetes-tools receiver-mock --print-headers
+sudo docker create -p 3000:3000 --name receiver-mock --restart=always sumologic/kubernetes-tools:2.9.0 receiver-mock --print-headers
 sudo docker start receiver-mock
 
 # Install build essentials
