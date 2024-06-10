@@ -19,9 +19,9 @@ sudo apt update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 sudo usermod -aG docker vagrant
 
-# start receiver-mock
-sudo docker create -p 3000:3000 --name receiver-mock --restart=always sumologic/kubernetes-tools receiver-mock --print-headers
-sudo docker start receiver-mock
+# start sumologic-mock
+sudo docker create -p 3000:3000 --name sumologic-mock --restart=always sumologic/sumologic-mock:2.23.0 sumologic-mock --print-metrics
+sudo docker start sumologic-mock
 
 # Install build essentials
 sudo apt-get install --yes build-essential
